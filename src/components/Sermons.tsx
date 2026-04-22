@@ -171,7 +171,7 @@ export default function Sermons() {
             <Plus className="w-4 h-4" />
             Upload Sermon
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
+          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Upload New Sermon</DialogTitle>
               <DialogDescription>Add a new sermon to the church archive.</DialogDescription>
@@ -339,7 +339,7 @@ export default function Sermons() {
 
       {/* Edit Dialog */}
       <Dialog open={!!editingSermon} onOpenChange={(open) => !open && setEditingSermon(null)}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Sermon</DialogTitle>
             <DialogDescription>Update the details for {editingSermon?.title}.</DialogDescription>

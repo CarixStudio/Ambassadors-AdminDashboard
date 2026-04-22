@@ -63,8 +63,9 @@ import {
 } from "@/components/ui/sheet";
 import { motion, AnimatePresence } from "motion/react";
 import MemberForm from "./forms/MemberForm";
-import { cn } from "@/src/lib/utils";
 import { auditRepo } from "@/src/lib/audit";
+import MemberAssignmentDialog from "./MemberAssignmentDialog";
+import { cn } from "@/src/lib/utils";
 
 import { useAuth } from "@/src/contexts/AuthContext";
 
@@ -88,6 +89,7 @@ export default function MembersList({ onTabChange }: { onTabChange?: (tab: strin
 
   const [pendingApprovals, setPendingApprovals] = React.useState<any[]>([]);
   const [approvingId, setApprovingId] = React.useState<string | null>(null);
+  const [assigningMember, setAssigningMember] = React.useState<any>(null);
 
   const { role } = useAuth();
   const canViewNotes = role === 'pastor' || role === 'super_admin';
@@ -363,7 +365,7 @@ export default function MembersList({ onTabChange }: { onTabChange?: (tab: strin
               <UserPlus className="w-4 h-4" />
               Add Member
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add New Member</DialogTitle>
                 <DialogDescription>Enter the details of the new church member here.</DialogDescription>
@@ -571,9 +573,13 @@ export default function MembersList({ onTabChange }: { onTabChange?: (tab: strin
                                 <DropdownMenuItem onClick={() => setEditingMember(member)}>
                                   <Edit2 className="w-4 h-4 mr-2" /> Edit Details
                                 </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setAssigningMember(member)}>
+                                  <ShieldCheck className="w-4 h-4 mr-2" /> Manage Assignments
+                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => onTabChange?.("attendance")}>
                                   <Calendar className="w-4 h-4 mr-2" /> View Attendance
                                 </DropdownMenuItem>
+                                <DropdownMenuSeparator />
                                 <DropdownMenuItem className="text-destructive focus:bg-destructive focus:text-destructive-foreground" onClick={() => handleDelete(member.id)}>
                                   <Trash2 className="w-4 h-4 mr-2" /> Delete Member
                                 </DropdownMenuItem>
@@ -629,7 +635,7 @@ export default function MembersList({ onTabChange }: { onTabChange?: (tab: strin
 
       {/* Edit Dialog */}
       <Dialog open={!!editingMember} onOpenChange={(open) => !open && setEditingMember(null)}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Member</DialogTitle>
             <DialogDescription>Update the details for {editingMember?.first_name}.</DialogDescription>
@@ -794,12 +800,16 @@ export default function MembersList({ onTabChange }: { onTabChange?: (tab: strin
               
               <div className="pt-6 border-t flex justify-end gap-3">
                 <Button variant="outline" onClick={() => setViewingMember(null)}>Close</Button>
-                <Button onClick={() => {
-                  setEditingMember(viewingMember);
-                  setViewingMember(null);
-                }}>
+                <Button variant="outline" onClick={() => setEditingMember(viewingMember)}>
                   <Edit2 className="w-4 h-4 mr-2" />
                   Edit Profile
+                </Button>
+                <Button variant="secondary" onClick={() => {
+                  setAssigningMember(viewingMember);
+                  setViewingMember(null);
+                }}>
+                  <ShieldCheck className="w-4 h-4 mr-2" />
+                  Assignments
                 </Button>
               </div>
             </div>
@@ -831,6 +841,16 @@ export default function MembersList({ onTabChange }: { onTabChange?: (tab: strin
           </Button>
         </div>
       </div>
+
+      <MemberAssignmentDialog 
+        member={assigningMember}
+        open={!!assigningMember}
+        onOpenChange={(open) => !open && setAssigningMember(null)}
+        onSuccess={() => {
+          fetchMembers();
+          fetchPendingApprovals();
+        }}
+      />
     </div>
   );
 }

@@ -1,61 +1,77 @@
 import * as React from "react";
-import { 
-  Target, 
-  TrendingUp, 
-  Users, 
-  Calendar, 
-  Plus, 
-  ArrowUpRight, 
-  Heart, 
+import {
+  Target,
+  TrendingUp,
+  Users,
+  Calendar,
+  Plus,
+  Heart,
   DollarSign,
-  PieChart,
   Activity,
-  ChevronRight
+  ChevronRight,
+  MoreVertical,
+  Trash2,
+  Edit2,
+  Eye,
+  CreditCard,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { motion, AnimatePresence } from "motion/react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { motion } from "motion/react";
 import { toast } from "sonner";
-
 import { supabase } from "@/src/lib/supabase";
+import { useAuth } from "@/src/contexts/AuthContext";
 
 export default function GivingGoals() {
+  const { user } = useAuth();
   const [goals, setGoals] = React.useState<any[]>([]);
-  const [stats, setStats] = React.useState({
-    totalRaised: 0,
-    activeDonors: 0,
-    activeCampaigns: 0,
-    completedGoals: 0
-  });
   const [loading, setLoading] = React.useState(true);
+  const [isCreateOpen, setIsCreateOpen] = React.useState(false);
+  const [editingGoal, setEditingGoal] = React.useState<any>(null);
+  const [viewingDonors, setViewingDonors] = React.useState<any>(null);
+  const [donors, setDonors] = React.useState<any[]>([]);
+  const [donorsLoading, setDonorsLoading] = React.useState(false);
+
+  // Form state
+  const [form, setForm] = React.useState({
+    title: "",
+    description: "",
+    target_amount: "",
+    start_date: "",
+    end_date: "",
+  });
+  const [saving, setSaving] = React.useState(false);
 
   const fetchGoals = async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('donation_categories')
-        .select('*')
-        .order('created_at', { ascending: false });
-
+        .from("giving_goals" as any)
+        .select("*")
+        .order("created_at", { ascending: false });
       if (error) throw error;
       setGoals(data || []);
-
-      // Calculate Stats
-      const total = data?.reduce((acc, curr) => acc + (curr.current_amount || 0), 0) || 0;
-      const active = data?.filter(g => g.is_active).length || 0;
-      const completed = data?.filter(g => (g.current_amount || 0) >= (g.goal_amount || 0)).length || 0;
-      const donors = 0; // donor_count does not exist on donation_categories table
-
-      setStats({
-        totalRaised: total,
-        activeDonors: donors,
-        activeCampaigns: active,
-        completedGoals: completed
-      });
-    } catch (error) {
-      console.error("Error fetching goals:", error);
+    } catch (err) {
+      console.error("Error fetching goals:", err);
     } finally {
       setLoading(false);
     }
@@ -65,150 +81,337 @@ export default function GivingGoals() {
     fetchGoals();
   }, []);
 
+  const fetchDonors = async (goal: any) => {
+    setDonorsLoading(true);
+    setDonors([]);
+    try {
+      // Find donations linked to this goal's category_id or matching donation_type by title
+      const { data } = await supabase
+        .from("donations")
+        .select("*")
+        .eq("category_id", goal.category_id)
+        .order("created_at", { ascending: false });
+      setDonors(data || []);
+    } catch (err) {
+      console.error("Error fetching donors:", err);
+    } finally {
+      setDonorsLoading(false);
+    }
+  };
+
+  const openDonors = (goal: any) => {
+    setViewingDonors(goal);
+    fetchDonors(goal);
+  };
+
+  const openEdit = (goal: any) => {
+    setEditingGoal(goal);
+    setForm({
+      title: goal.title || "",
+      description: goal.description || "",
+      target_amount: goal.target_amount?.toString() || "",
+      start_date: goal.start_date || "",
+      end_date: goal.end_date || "",
+    });
+  };
+
+  const resetForm = () => {
+    setForm({ title: "", description: "", target_amount: "", start_date: "", end_date: "" });
+    setEditingGoal(null);
+    setIsCreateOpen(false);
+  };
+
+  const handleSave = async () => {
+    if (!form.title || !form.target_amount) {
+      toast.error("Title and target amount are required");
+      return;
+    }
+    setSaving(true);
+    try {
+      const payload: any = {
+        title: form.title,
+        description: form.description || null,
+        target_amount: parseFloat(form.target_amount),
+        start_date: form.start_date || null,
+        end_date: form.end_date || null,
+        is_active: true,
+      };
+
+      if (editingGoal) {
+        const { error } = await (supabase.from("giving_goals" as any) as any)
+          .update(payload)
+          .eq("id", editingGoal.id);
+        if (error) throw error;
+        toast.success("Goal updated ✅");
+      } else {
+        payload.created_by = user?.id;
+        const { error } = await (supabase.from("giving_goals" as any) as any).insert(payload);
+        if (error) throw error;
+        toast.success("Goal created 🎯");
+      }
+      resetForm();
+      fetchGoals();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this giving goal?")) return;
+    const { error } = await (supabase.from("giving_goals" as any) as any).delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Goal deleted");
+    fetchGoals();
+  };
+
+  const totalRaised = goals.reduce((s, g) => s + (g.current_amount || 0), 0);
+  const active = goals.filter(g => g.is_active).length;
+  const completed = goals.filter(g => (g.current_amount || 0) >= (g.target_amount || 1)).length;
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
-              <Target className="w-6 h-6 text-primary-foreground" />
-            </div>
-            <h1 className="text-3xl font-black tracking-tighter">Giving Goals</h1>
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center shadow-xl shadow-primary/20">
+            <Target className="w-7 h-7 text-primary-foreground" />
           </div>
-          <p className="text-muted-foreground font-medium">Track progress on church projects, fundraising campaigns, and community outreach goals.</p>
+          <div>
+            <h1 className="text-3xl font-black tracking-tighter">Giving Goals</h1>
+            <p className="text-muted-foreground text-sm font-medium">Track fundraising campaigns and see who's contributing.</p>
+          </div>
         </div>
-        <Button className="rounded-2xl h-12 px-6 font-bold uppercase tracking-widest text-[10px] gap-2 shadow-xl shadow-primary/20">
-          <Plus className="w-4 h-4" />
-          New Campaign
+        <Button
+          onClick={() => setIsCreateOpen(true)}
+          className="rounded-2xl h-12 px-6 font-bold uppercase tracking-widest text-[10px] gap-2 shadow-xl shadow-primary/20"
+        >
+          <Plus className="w-4 h-4" /> New Goal
         </Button>
       </div>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-none shadow-xl bg-card/50 backdrop-blur-xl rounded-3xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-primary/10 rounded-2xl text-primary">
-              <DollarSign className="w-5 h-5" />
+      {/* Stats */}
+      <div className="grid sm:grid-cols-3 gap-4">
+        {[
+          { label: "Total Raised", value: `₦${totalRaised.toLocaleString()}`, icon: DollarSign, color: "text-primary", bg: "bg-primary/10" },
+          { label: "Active Campaigns", value: active, icon: Activity, color: "text-amber-600", bg: "bg-amber-500/10" },
+          { label: "Goals Completed", value: completed, icon: Heart, color: "text-purple-600", bg: "bg-purple-500/10" },
+        ].map(stat => (
+          <Card key={stat.label} className="border-none shadow-xl bg-card/50 backdrop-blur-xl rounded-3xl p-6">
+            <div className="flex items-center justify-between mb-3">
+              <div className={`p-3 ${stat.bg} rounded-2xl ${stat.color}`}>
+                <stat.icon className="w-5 h-5" />
+              </div>
             </div>
-            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-none text-[8px] font-bold">+18%</Badge>
-          </div>
-          <p className="text-2xl font-black">₦{stats.totalRaised.toLocaleString()}</p>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Total Raised</p>
-        </Card>
-        <Card className="border-none shadow-xl bg-card/50 backdrop-blur-xl rounded-3xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-blue-500/10 rounded-2xl text-blue-600">
-              <Users className="w-5 h-5" />
-            </div>
-            <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-none text-[8px] font-bold">LIVE</Badge>
-          </div>
-          <p className="text-2xl font-black">{stats.activeDonors}</p>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Active Donors</p>
-        </Card>
-        <Card className="border-none shadow-xl bg-card/50 backdrop-blur-xl rounded-3xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-amber-500/10 rounded-2xl text-amber-600">
-              <Activity className="w-5 h-5" />
-            </div>
-            <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-none text-[8px] font-bold">ACTIVE</Badge>
-          </div>
-          <p className="text-2xl font-black">{stats.activeCampaigns}</p>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Running Campaigns</p>
-        </Card>
-        <Card className="border-none shadow-xl bg-card/50 backdrop-blur-xl rounded-3xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-purple-500/10 rounded-2xl text-purple-600">
-              <Heart className="w-5 h-5" />
-            </div>
-            <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-none text-[8px] font-bold">COMPLETED</Badge>
-          </div>
-          <p className="text-2xl font-black">{stats.completedGoals}</p>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Reached Goals</p>
-        </Card>
+            <p className="text-2xl font-black">{stat.value}</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-1">{stat.label}</p>
+          </Card>
+        ))}
       </div>
 
+      {/* Goals Grid */}
       <div className="grid lg:grid-cols-2 gap-6">
         {loading ? (
           Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i} className="h-64 animate-pulse bg-muted/50 rounded-[2.5rem] border-none" />
+            <div key={i} className="h-56 animate-pulse bg-muted/40 rounded-3xl" />
           ))
         ) : goals.length === 0 ? (
           <div className="col-span-full py-20 text-center space-y-4 bg-muted/20 rounded-3xl border-2 border-dashed">
-            <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto">
-              <Target className="w-10 h-10 text-muted-foreground" />
+            <Target className="w-14 h-14 text-muted-foreground mx-auto opacity-40" />
+            <div>
+              <h3 className="font-bold text-xl">No giving goals yet</h3>
+              <p className="text-muted-foreground text-sm">Create your first campaign to start tracking progress.</p>
             </div>
-            <div className="space-y-1">
-              <h3 className="font-bold text-xl">No active campaigns</h3>
-              <p className="text-muted-foreground">Create your first goal to start tracking progress.</p>
+            <Button onClick={() => setIsCreateOpen(true)} className="rounded-xl mt-2">
+              <Plus className="w-4 h-4 mr-2" /> Create First Goal
+            </Button>
+          </div>
+        ) : goals.map((goal) => {
+          const pct = Math.min(100, Math.round(((goal.current_amount || 0) / (goal.target_amount || 1)) * 100));
+          return (
+            <motion.div
+              key={goal.id}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="group relative bg-card/50 backdrop-blur-xl p-7 rounded-3xl shadow-xl border border-border/40 hover:shadow-2xl transition-all duration-500"
+            >
+              <div className="flex items-start justify-between mb-5">
+                <div className="space-y-1.5">
+                  {goal.end_date && (
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                      <Calendar className="w-3 h-3" />
+                      Ends {new Date(goal.end_date).toLocaleDateString()}
+                    </div>
+                  )}
+                  <h3 className="text-lg font-black tracking-tight">{goal.title}</h3>
+                  {goal.description && (
+                    <p className="text-sm text-muted-foreground line-clamp-2">{goal.description}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge className={`text-[9px] font-bold border-none ${goal.is_active ? 'bg-emerald-500/10 text-emerald-600' : 'bg-muted text-muted-foreground'}`}>
+                    {goal.is_active ? 'ACTIVE' : 'CLOSED'}
+                  </Badge>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 w-8 rounded-full hover:bg-muted outline-none">
+                      <MoreVertical className="w-4 h-4" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-44">
+                      <DropdownMenuItem onClick={() => openDonors(goal)}>
+                        <Eye className="w-4 h-4 mr-2" /> See Donors
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => openEdit(goal)}>
+                        <Edit2 className="w-4 h-4 mr-2" /> Edit Goal
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem className="text-destructive focus:bg-destructive focus:text-destructive-foreground" onClick={() => handleDelete(goal.id)}>
+                        <Trash2 className="w-4 h-4 mr-2" /> Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-xs font-bold">
+                  <span className="text-muted-foreground uppercase tracking-widest">Progress</span>
+                  <span className="text-primary">{pct}%</span>
+                </div>
+                <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${pct}%` }}
+                    transition={{ duration: 1.2, ease: "easeOut" }}
+                    className="h-full bg-primary rounded-full"
+                  />
+                </div>
+                <div className="flex items-center justify-between text-sm font-bold">
+                  <span>₦{(goal.current_amount || 0).toLocaleString()}</span>
+                  <span className="text-muted-foreground">of ₦{(goal.target_amount || 0).toLocaleString()}</span>
+                </div>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => openDonors(goal)}
+                className="w-full mt-4 rounded-xl h-9 text-[10px] font-bold uppercase tracking-widest hover:bg-primary/10 hover:text-primary justify-between group/btn"
+              >
+                <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> View Donors</span>
+                <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+              </Button>
+            </motion.div>
+          );
+        })}
+      </div>
+
+      {/* Create / Edit Dialog */}
+      <Dialog open={isCreateOpen || !!editingGoal} onOpenChange={open => !open && resetForm()}>
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingGoal ? "Edit Goal" : "Create Giving Goal"}</DialogTitle>
+            <DialogDescription>Set a fundraising target for a campaign or project.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Title *</label>
+              <Input
+                value={form.title}
+                onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
+                placeholder="e.g. Building Fund 2025"
+                className="rounded-xl h-11 bg-muted/30 border-none"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Description</label>
+              <Textarea
+                value={form.description}
+                onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+                placeholder="What is this goal for?"
+                className="rounded-xl bg-muted/30 border-none resize-none min-h-[80px]"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Target Amount (₦) *</label>
+              <Input
+                type="number"
+                value={form.target_amount}
+                onChange={e => setForm(p => ({ ...p, target_amount: e.target.value }))}
+                placeholder="e.g. 5000000"
+                className="rounded-xl h-11 bg-muted/30 border-none"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Start Date</label>
+                <Input
+                  type="date"
+                  value={form.start_date}
+                  onChange={e => setForm(p => ({ ...p, start_date: e.target.value }))}
+                  className="rounded-xl h-11 bg-muted/30 border-none"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">End Date</label>
+                <Input
+                  type="date"
+                  value={form.end_date}
+                  onChange={e => setForm(p => ({ ...p, end_date: e.target.value }))}
+                  className="rounded-xl h-11 bg-muted/30 border-none"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <Button variant="ghost" onClick={resetForm} className="rounded-xl h-11">Cancel</Button>
+              <Button onClick={handleSave} disabled={saving} className="rounded-xl h-11 px-8 shadow-lg shadow-primary/20">
+                {saving ? "Saving..." : editingGoal ? "Update Goal" : "Create Goal"}
+              </Button>
             </div>
           </div>
-        ) : (
-          goals.map((goal) => {
-            const percentage = Math.min(100, Math.round(((goal.current_amount || 0) / (goal.goal_amount || 1)) * 100));
-            return (
-              <motion.div
-                key={goal.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                whileHover={{ scale: 1.01 }}
-                className="bg-card/50 backdrop-blur-xl p-8 rounded-[2.5rem] shadow-xl border border-border/50 group transition-all"
-              >
-                <div className="flex items-start justify-between mb-6">
-                  <div className="space-y-1">
-                    <Badge variant="outline" className="bg-primary/10 text-primary border-none text-[8px] font-bold uppercase tracking-widest mb-2">
-                      {goal.category || 'General'}
-                    </Badge>
-                    <h3 className="text-xl font-black tracking-tight">{goal.name}</h3>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-black text-primary">{percentage}%</p>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Funded</p>
-                  </div>
-                </div>
+        </DialogContent>
+      </Dialog>
 
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs font-bold uppercase tracking-widest">
-                      <span className="text-muted-foreground">Progress</span>
-                      <span>₦{(goal.current_amount || 0).toLocaleString()} / ₦{(goal.goal_amount || 0).toLocaleString()}</span>
-                    </div>
-                    <div className="h-3 bg-muted rounded-full overflow-hidden p-0.5">
-                      <motion.div 
-                        initial={{ width: 0 }}
-                        animate={{ width: `${percentage}%` }}
-                        transition={{ duration: 1, ease: "easeOut" }}
-                        className="h-full bg-primary rounded-full shadow-[0_0_12px_rgba(var(--primary),0.4)]"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border/50">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-1.5 text-muted-foreground">
-                        <Users className="w-3.5 h-3.5" />
-                        <span className="text-[10px] font-bold uppercase tracking-widest">Donors</span>
-                      </div>
-                      <p className="text-sm font-black">{goal.donor_count || 0}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-1.5 text-muted-foreground">
-                        <Calendar className="w-3.5 h-3.5" />
-                        <span className="text-[10px] font-bold uppercase tracking-widest">Deadline</span>
-                      </div>
-                      <p className="text-sm font-black">{goal.deadline ? new Date(goal.deadline).toLocaleDateString() : 'No Limit'}</p>
-                    </div>
-                    <div className="flex items-end justify-end">
-                      <Button variant="ghost" size="sm" className="rounded-xl h-9 px-4 text-[10px] font-bold uppercase tracking-widest hover:bg-primary/10 hover:text-primary group/btn">
-                        Details
-                        <ChevronRight className="w-4 h-4 ml-1 group-hover/btn:translate-x-1 transition-transform" />
-                      </Button>
-                    </div>
-                  </div>
+      {/* Donors Panel Dialog */}
+      <Dialog open={!!viewingDonors} onOpenChange={open => !open && setViewingDonors(null)}>
+        <DialogContent className="sm:max-w-[580px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Heart className="w-5 h-5 text-primary" />
+              Donors — {viewingDonors?.title}
+            </DialogTitle>
+            <DialogDescription>
+              {donorsLoading ? "Loading..." : `${donors.length} contribution${donors.length !== 1 ? 's' : ''} recorded`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 pt-2">
+            {donorsLoading ? (
+              [1, 2, 3].map(i => <div key={i} className="h-14 bg-muted/30 rounded-xl animate-pulse" />)
+            ) : donors.length === 0 ? (
+              <div className="py-14 text-center space-y-3">
+                <CreditCard className="w-12 h-12 text-muted-foreground mx-auto opacity-30" />
+                <p className="text-muted-foreground font-semibold">No donations recorded for this goal yet</p>
+                <p className="text-xs text-muted-foreground">Donations are matched by category. Make sure this goal has a linked category.</p>
+              </div>
+            ) : donors.map((d: any) => (
+              <div key={d.id} className="flex items-center gap-4 p-4 rounded-xl bg-muted/30 border border-border/40">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 font-bold text-primary text-sm">
+                  {(d.donor_name || d.donor_email || '?')[0].toUpperCase()}
                 </div>
-              </motion.div>
-            );
-          })
-        )}
-      </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-sm">{d.is_anonymous ? 'Anonymous' : (d.donor_name || d.donor_email || 'Unknown')}</p>
+                  <p className="text-xs text-muted-foreground">{d.created_at ? new Date(d.created_at).toLocaleDateString() : ''}</p>
+                </div>
+                <div className="text-right">
+                  <p className="font-black text-primary">₦{(d.amount || 0).toLocaleString()}</p>
+                  <Badge className={`text-[9px] border-none ${d.status === 'completed' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'}`}>
+                    {d.status}
+                  </Badge>
+                </div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

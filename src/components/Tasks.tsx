@@ -68,7 +68,7 @@ interface Comment {
   date: string;
 }
 
-type Task = Omit<Database["public"]["Tables"]["tasks"]["Row"], "subtasks" | "comments"> & {
+type Task = Omit<Database["public"]["Tables"]["tasks"]["Row"], "subtasks" | "comments" | "assignee"> & {
   subtasks: Subtask[] | null;
   comments: Comment[] | null;
   assignee?: {
@@ -103,10 +103,12 @@ export default function Tasks() {
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
   const [editingTask, setEditingTask] = React.useState<Task | null>(null);
   const [viewingTask, setViewingTask] = React.useState<Task | null>(null);
+  const [departments, setDepartments] = React.useState<any[]>([]);
 
   React.useEffect(() => {
     fetchTasks();
     fetchWorkers();
+    fetchDepartments();
   }, []);
 
   const fetchTasks = async () => {
@@ -144,12 +146,28 @@ export default function Tasks() {
             first_name,
             last_name,
             avatar_url
+          ),
+          church_departments (
+            name
           )
         `);
       if (error) throw error;
       setWorkers((data as any) || []);
     } catch (error) {
       console.error("Error fetching workers:", error);
+    }
+  };
+
+  const fetchDepartments = async () => {
+    try {
+      const { data } = await supabase
+        .from('church_departments')
+        .select('id, name')
+        .eq('is_active', true)
+        .order('name');
+      setDepartments(data || []);
+    } catch (error) {
+      console.error("Error fetching departments:", error);
     }
   };
 
@@ -347,7 +365,7 @@ export default function Tasks() {
                 <DialogTitle className="text-2xl font-black tracking-tighter">New Task</DialogTitle>
                 <DialogDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Add a new operational task to the board</DialogDescription>
               </DialogHeader>
-              <TaskForm onSubmit={handleCreateTask} workers={workers} onCancel={() => setIsCreateOpen(false)} />
+              <TaskForm onSubmit={handleCreateTask} workers={workers} departments={departments} onCancel={() => setIsCreateOpen(false)} />
             </DialogContent>
           </Dialog>
         </div>
@@ -535,6 +553,7 @@ export default function Tasks() {
                 dueDate: editingTask.due_date ? new Date(editingTask.due_date) : new Date()
               }} 
               workers={workers}
+              departments={departments}
               onSubmit={handleUpdateTask} 
               onCancel={() => setEditingTask(null)} 
             />

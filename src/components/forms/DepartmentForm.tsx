@@ -28,7 +28,7 @@ import { Loader2 } from "lucide-react";
 const departmentSchema = z.object({
   name: z.string().min(2, "Name is required"),
   description: z.string().min(10, "Description is required"),
-  leader_id: z.string().optional(),
+  head_id: z.string().optional(),
   status: z.enum(["active", "inactive"]),
   budget_code: z.string().optional(),
 });
@@ -59,6 +59,7 @@ export default function DepartmentForm({ initialData, onSuccess, onCancel }: Dep
       name: "",
       description: "",
       status: "active",
+      head_id: initialData?.head_id || "",
       budget_code: "",
     },
   });
@@ -122,10 +123,10 @@ export default function DepartmentForm({ initialData, onSuccess, onCancel }: Dep
         <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
-            name="leader_id"
+            name="head_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Department Lead</FormLabel>
+                <FormLabel>Department Head</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>

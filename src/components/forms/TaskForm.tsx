@@ -35,6 +35,7 @@ const taskSchema = z.object({
   description: z.string().optional(),
   status: z.string(),
   priority: z.string(),
+  department_id: z.string().optional(),
   assignee: z.string().min(1, "Assignee is required"),
   dueDate: z.date(),
   category: z.string().optional(),
@@ -45,12 +46,18 @@ type TaskFormValues = z.infer<typeof taskSchema>;
 interface TaskFormProps {
   initialData?: any;
   workers: any[];
+  departments?: any[];
   onSubmit: (data: TaskFormValues) => void;
   onCancel: () => void;
   loading?: boolean;
 }
 
-export default function TaskForm({ initialData, workers, onSubmit, onCancel, loading }: TaskFormProps) {
+export default function TaskForm({ initialData, workers, departments = [], onSubmit, onCancel, loading }: TaskFormProps) {
+  const [deptFilter, setDeptFilter] = React.useState(initialData?.department_id || "");
+  const filteredWorkers = deptFilter
+    ? workers.filter(w => w.department_id === deptFilter)
+    : workers;
+
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
     defaultValues: {
@@ -58,6 +65,7 @@ export default function TaskForm({ initialData, workers, onSubmit, onCancel, loa
       description: initialData?.description || "",
       status: initialData?.status || "todo",
       priority: initialData?.priority || "Medium",
+      department_id: initialData?.department_id || "",
       assignee: initialData?.assignee || "",
       dueDate: initialData?.dueDate ? new Date(initialData.dueDate) : new Date(),
       category: initialData?.category || "General",
@@ -156,6 +164,21 @@ export default function TaskForm({ initialData, workers, onSubmit, onCancel, loa
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Assignee</FormLabel>
+                {departments.length > 0 && (
+                  <div className="mb-2">
+                    <Select value={deptFilter} onValueChange={v => { setDeptFilter(v ?? ''); form.setValue('assignee', ''); }}>
+                      <SelectTrigger className="rounded-xl h-9 bg-muted/20 border-none text-xs">
+                        <SelectValue placeholder="Filter by dept..." />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        <SelectItem value="">All Departments</SelectItem>
+                        {departments.map((d: any) => (
+                          <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger className="rounded-xl h-11 bg-muted/30 border-none">
@@ -163,9 +186,12 @@ export default function TaskForm({ initialData, workers, onSubmit, onCancel, loa
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent className="rounded-xl">
-                    {workers.map((worker) => (
+                    {filteredWorkers.length === 0 ? (
+                      <div className="px-3 py-2 text-xs text-muted-foreground">No workers in this department</div>
+                    ) : filteredWorkers.map((worker) => (
                       <SelectItem key={worker.id} value={worker.user_id}>
-                        {worker.profiles.first_name} {worker.profiles.last_name}
+                        {worker.profiles?.first_name} {worker.profiles?.last_name}
+                        {worker.church_departments?.name && ` · ${worker.church_departments.name}`}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -182,24 +208,19 @@ export default function TaskForm({ initialData, workers, onSubmit, onCancel, loa
               <FormItem className="flex flex-col">
                 <FormLabel className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Due Date</FormLabel>
                 <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-full h-11 rounded-xl bg-muted/30 border-none pl-3 text-left font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
-                      >
-                        {field.value ? (
-                          format(field.value, "PPP")
-                        ) : (
-                          <span>Pick a date</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
+                  <FormControl>
+                    <PopoverTrigger className={cn(
+                      "w-full h-11 rounded-xl bg-muted/30 border-none px-3 text-left font-normal flex items-center justify-between outline-none",
+                      !field.value && "text-muted-foreground"
+                    )}>
+                      {field.value ? (
+                        format(field.value, "PPP")
+                      ) : (
+                        <span>Pick a date</span>
+                      )}
+                      <CalendarIcon className="h-4 w-4 opacity-50" />
+                    </PopoverTrigger>
+                  </FormControl>
                   <PopoverContent className="w-auto p-0 rounded-2xl" align="start">
                     <Calendar
                       mode="single"

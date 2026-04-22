@@ -144,7 +144,7 @@ export default function PrayerRequests() {
             <Plus className="w-4 h-4" />
             Submit Request
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Submit Prayer Request</DialogTitle>
               <DialogDescription>Share your heart with the church family.</DialogDescription>
@@ -316,7 +316,7 @@ export default function PrayerRequests() {
 
       {/* Edit Dialog */}
       <Dialog open={!!editingPrayer} onOpenChange={(open) => !open && setEditingPrayer(null)}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Prayer Request</DialogTitle>
             <DialogDescription>Update your prayer request for the church family.</DialogDescription>

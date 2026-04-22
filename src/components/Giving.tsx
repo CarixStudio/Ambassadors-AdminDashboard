@@ -170,7 +170,7 @@ export default function Giving() {
               <Plus className="w-4 h-4" />
               Record Donation
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Record Donation</DialogTitle>
                 <DialogDescription>Manually record a donation or tithe received.</DialogDescription>

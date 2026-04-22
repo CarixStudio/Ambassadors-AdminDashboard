@@ -141,7 +141,7 @@ export default function BlogPosts() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input placeholder="Search posts..." className="pl-10 h-11 bg-card/50 border-none shadow-sm" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select value={statusFilter} onValueChange={(val) => setStatusFilter(val || "all")}>
           <SelectTrigger className="w-full md:w-40 h-11 bg-card/50 border-none shadow-sm"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Posts</SelectItem>
@@ -216,7 +216,7 @@ export default function BlogPosts() {
               </div>
               <div className="space-y-2">
                 <Label>Category</Label>
-                <Select value={form.category_id} onValueChange={v => setForm(f => ({ ...f, category_id: v }))}>
+                <Select value={form.category_id} onValueChange={v => setForm(f => ({ ...f, category_id: v ?? '' }))}>
                   <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                   <SelectContent>
                     {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
@@ -263,7 +263,7 @@ export default function BlogPosts() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Status</Label>
-                <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
+                <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v ?? 'draft' }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="draft">Draft</SelectItem>

@@ -70,20 +70,21 @@ export default function MinistryForm({ initialData, type = "ministry", onSuccess
 
   async function onSubmit(values: any) {
     setLoading(true);
+    const tableName = isDepartment ? "church_departments" : "ministries";
     try {
       if (initialData?.id) {
         const { error } = await supabase
-          .from("ministries")
+          .from(tableName)
           .update(values)
           .eq("id", initialData.id);
         if (error) throw error;
-        toast.success("Ministry updated successfully");
+        toast.success(`${isDepartment ? 'Department' : 'Ministry'} updated successfully`);
       } else {
         const { error } = await supabase
-          .from("ministries")
+          .from(tableName)
           .insert([values]);
         if (error) throw error;
-        toast.success("Ministry created successfully");
+        toast.success(`${isDepartment ? 'Department' : 'Ministry'} created successfully`);
       }
       onSuccess();
     } catch (error: any) {

@@ -843,9 +843,12 @@ export type Database = {
       }
       donation_categories: {
         Row: {
+          category: string | null
           created_at: string | null
           current_amount: number | null
+          deadline: string | null
           description: string | null
+          donor_count: number | null
           goal_amount: number | null
           icon: string | null
           id: string
@@ -863,9 +866,12 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          category?: string | null
           created_at?: string | null
           current_amount?: number | null
+          deadline?: string | null
           description?: string | null
+          donor_count?: number | null
           goal_amount?: number | null
           icon?: string | null
           id?: string
@@ -883,9 +889,12 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          category?: string | null
           created_at?: string | null
           current_amount?: number | null
+          deadline?: string | null
           description?: string | null
+          donor_count?: number | null
           goal_amount?: number | null
           icon?: string | null
           id?: string
@@ -910,6 +919,7 @@ export type Database = {
           category_id: string | null
           created_at: string | null
           currency: string | null
+          donation_type: string | null
           donor_email: string | null
           donor_name: string | null
           donor_phone: string | null
@@ -920,6 +930,10 @@ export type Database = {
           is_gift_aid: boolean | null
           notes: string | null
           paid_at: string | null
+          payment_channel: string | null
+          paystack_access_code: string | null
+          paystack_reference: string | null
+          paystack_transaction_id: string | null
           receipt_email_sent: boolean | null
           receipt_number: string | null
           receipt_sent_at: string | null
@@ -939,6 +953,7 @@ export type Database = {
           category_id?: string | null
           created_at?: string | null
           currency?: string | null
+          donation_type?: string | null
           donor_email?: string | null
           donor_name?: string | null
           donor_phone?: string | null
@@ -949,6 +964,10 @@ export type Database = {
           is_gift_aid?: boolean | null
           notes?: string | null
           paid_at?: string | null
+          payment_channel?: string | null
+          paystack_access_code?: string | null
+          paystack_reference?: string | null
+          paystack_transaction_id?: string | null
           receipt_email_sent?: boolean | null
           receipt_number?: string | null
           receipt_sent_at?: string | null
@@ -968,6 +987,7 @@ export type Database = {
           category_id?: string | null
           created_at?: string | null
           currency?: string | null
+          donation_type?: string | null
           donor_email?: string | null
           donor_name?: string | null
           donor_phone?: string | null
@@ -978,6 +998,10 @@ export type Database = {
           is_gift_aid?: boolean | null
           notes?: string | null
           paid_at?: string | null
+          payment_channel?: string | null
+          paystack_access_code?: string | null
+          paystack_reference?: string | null
+          paystack_transaction_id?: string | null
           receipt_email_sent?: boolean | null
           receipt_number?: string | null
           receipt_sent_at?: string | null
@@ -2295,7 +2319,11 @@ export type Database = {
         Row: {
           address_line_1: string | null
           address_line_2: string | null
+          already_serving: boolean | null
           alt_phone: string | null
+          approval_status: string | null
+          approved_at: string | null
+          approved_by: string | null
           avatar_url: string | null
           baptism_date: string | null
           bio: string | null
@@ -2306,6 +2334,7 @@ export type Database = {
           date_of_birth: string | null
           deactivated_at: string | null
           deactivation_reason: string | null
+          department_claim: string | null
           department_interest: string | null
           email: string
           email_verified: boolean | null
@@ -2342,6 +2371,7 @@ export type Database = {
           receive_email_events: boolean | null
           receive_email_newsletter: boolean | null
           receive_sms_notifications: boolean | null
+          role_claim: string | null
           salvation_date: string | null
           spiritual_gifts: string[] | null
           status: Database["public"]["Enums"]["user_status"] | null
@@ -2353,7 +2383,11 @@ export type Database = {
         Insert: {
           address_line_1?: string | null
           address_line_2?: string | null
+          already_serving?: boolean | null
           alt_phone?: string | null
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           avatar_url?: string | null
           baptism_date?: string | null
           bio?: string | null
@@ -2364,6 +2398,7 @@ export type Database = {
           date_of_birth?: string | null
           deactivated_at?: string | null
           deactivation_reason?: string | null
+          department_claim?: string | null
           department_interest?: string | null
           email: string
           email_verified?: boolean | null
@@ -2402,6 +2437,7 @@ export type Database = {
           receive_email_events?: boolean | null
           receive_email_newsletter?: boolean | null
           receive_sms_notifications?: boolean | null
+          role_claim?: string | null
           salvation_date?: string | null
           spiritual_gifts?: string[] | null
           status?: Database["public"]["Enums"]["user_status"] | null
@@ -2413,7 +2449,11 @@ export type Database = {
         Update: {
           address_line_1?: string | null
           address_line_2?: string | null
+          already_serving?: boolean | null
           alt_phone?: string | null
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           avatar_url?: string | null
           baptism_date?: string | null
           bio?: string | null
@@ -2424,6 +2464,7 @@ export type Database = {
           date_of_birth?: string | null
           deactivated_at?: string | null
           deactivation_reason?: string | null
+          department_claim?: string | null
           department_interest?: string | null
           email?: string
           email_verified?: boolean | null
@@ -2462,6 +2503,7 @@ export type Database = {
           receive_email_events?: boolean | null
           receive_email_newsletter?: boolean | null
           receive_sms_notifications?: boolean | null
+          role_claim?: string | null
           salvation_date?: string | null
           spiritual_gifts?: string[] | null
           status?: Database["public"]["Enums"]["user_status"] | null
@@ -3213,6 +3255,7 @@ export type Database = {
       }
       tasks: {
         Row: {
+          assignee: string | null
           assignee_id: string | null
           category: string | null
           comments: Json | null
@@ -3227,6 +3270,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          assignee?: string | null
           assignee_id?: string | null
           category?: string | null
           comments?: Json | null
@@ -3241,6 +3285,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          assignee?: string | null
           assignee_id?: string | null
           category?: string | null
           comments?: Json | null

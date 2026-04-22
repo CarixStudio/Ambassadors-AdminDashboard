@@ -1,11 +1,11 @@
 import * as React from "react";
-import { 
-  Calendar, 
-  MapPin, 
-  Clock, 
-  Users, 
-  Plus, 
-  Search, 
+import {
+  Calendar,
+  MapPin,
+  Clock,
+  Users,
+  Plus,
+  Search,
   Filter,
   ChevronRight,
   Video,
@@ -14,7 +14,9 @@ import {
   Edit2,
   Trash2,
   Share2,
-  CheckCircle2
+  CheckCircle2,
+  ClipboardList,
+  X
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -54,6 +56,9 @@ export default function Events() {
   const [isAddOpen, setIsAddOpen] = React.useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = React.useState(false);
   const [editingEvent, setEditingEvent] = React.useState<any>(null);
+  const [viewingRegistrations, setViewingRegistrations] = React.useState<any>(null);
+  const [registrations, setRegistrations] = React.useState<any[]>([]);
+  const [regsLoading, setRegsLoading] = React.useState(false);
 
   const fetchEvents = async (retries = 3) => {
     setLoading(true);
@@ -93,6 +98,17 @@ export default function Events() {
       return () => clearTimeout(debounce);
     }
   }, [search, tab, authLoading]);
+
+  const fetchRegistrations = async (eventId: string) => {
+    setRegsLoading(true);
+    const { data } = await supabase
+      .from('event_registrations')
+      .select('*, profiles:user_id(first_name, last_name, email, avatar_url)')
+      .eq('event_id', eventId)
+      .order('created_at', { ascending: false });
+    setRegistrations(data || []);
+    setRegsLoading(false);
+  };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this event?")) return;
@@ -221,6 +237,12 @@ export default function Events() {
                         <Edit2 className="w-4 h-4 mr-2" /> Edit Event
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => {
+                        setViewingRegistrations(event);
+                        fetchRegistrations(event.id);
+                      }}>
+                        <ClipboardList className="w-4 h-4 mr-2" /> View Registrations
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => {
                         const url = `${window.location.origin}/events/${event.id}`;
                         navigator.clipboard.writeText(url);
                         toast.success("Event link copied to clipboard");
@@ -311,8 +333,8 @@ export default function Events() {
                     </div>
                   </CardContent>
                   <CardFooter className="p-6 pt-0 border-t bg-muted/5 mt-auto">
-                    <Button variant="ghost" className="w-full justify-between group/btn px-0 hover:bg-transparent">
-                      <span className="text-xs font-bold uppercase tracking-widest">View Details & Register</span>
+                    <Button variant="ghost" className="w-full justify-between group/btn px-0 hover:bg-transparent" onClick={() => { setViewingRegistrations(event); fetchRegistrations(event.id); }}>
+                      <span className="text-xs font-bold uppercase tracking-widest">View Registrations ({event.current_attendees || 0})</span>
                       <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                     </Button>
                   </CardFooter>
@@ -375,6 +397,51 @@ export default function Events() {
                       <Badge variant="outline" className="text-[8px] uppercase tracking-tighter">{event.category || 'General'}</Badge>
                     </div>
                   ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Registrations Dialog */}
+      <Dialog open={!!viewingRegistrations} onOpenChange={(open) => !open && setViewingRegistrations(null)}>
+        <DialogContent className="sm:max-w-[640px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardList className="w-5 h-5 text-primary" />
+              Registrations — {viewingRegistrations?.title}
+            </DialogTitle>
+            <DialogDescription>
+              {registrations.length} people registered for this event.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 pt-2">
+            {regsLoading ? (
+              [1,2,3].map(i => <div key={i} className="h-14 animate-pulse bg-muted/40 rounded-xl" />)
+            ) : registrations.length === 0 ? (
+              <div className="py-12 text-center text-muted-foreground">
+                <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p className="font-semibold">No registrations yet</p>
+              </div>
+            ) : registrations.map((reg: any) => (
+              <div key={reg.id} className="flex items-center gap-4 p-4 rounded-xl bg-muted/30 border border-border/50">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 font-bold text-primary text-sm">
+                  {(reg.profiles?.first_name || reg.guest_name || '?')[0].toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-sm">
+                    {reg.profiles ? `${reg.profiles.first_name} ${reg.profiles.last_name}` : reg.guest_name || 'Guest'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{reg.profiles?.email || reg.guest_email}</p>
+                </div>
+                <div className="text-right space-y-1">
+                  {reg.checked_in ? (
+                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full">Checked In</span>
+                  ) : (
+                    <span className="text-[10px] font-bold text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded-full">Registered</span>
+                  )}
+                  <p className="text-[10px] text-muted-foreground">{reg.created_at ? new Date(reg.created_at).toLocaleDateString() : ''}</p>
                 </div>
               </div>
             ))}

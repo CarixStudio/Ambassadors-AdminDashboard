@@ -54,6 +54,17 @@ export default function MediaGallery() {
   const [isAddOpen, setIsAddOpen] = React.useState(false);
   const [editingMedia, setEditingMedia] = React.useState<any>(null);
   const [selectedMedia, setSelectedMedia] = React.useState<any>(null);
+  const [editingCloudinaryId, setEditingCloudinaryId] = React.useState<any>(null);
+  const [newCloudinaryId, setNewCloudinaryId] = React.useState("");
+  const [savingCloudinary, setSavingCloudinary] = React.useState(false);
+
+  const CLOUD_NAME = (import.meta as any).env?.VITE_CLOUDINARY_CLOUD_NAME || '';
+  const getCloudinaryUrl = (item: any) => {
+    if (item.cloudinary_public_id && CLOUD_NAME) {
+      return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/${item.cloudinary_public_id}`;
+    }
+    return item.url || item.media_url || `https://picsum.photos/seed/${item.id}/800/600`;
+  };
 
   const fetchMedia = async (retries = 3) => {
     setLoading(true);
@@ -104,6 +115,28 @@ export default function MediaGallery() {
     }
   };
 
+  const handleSaveCloudinaryId = async () => {
+    if (!editingCloudinaryId) return;
+    setSavingCloudinary(true);
+    try {
+      const cloudUrl = CLOUD_NAME
+        ? `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/${newCloudinaryId}`
+        : editingCloudinaryId.url;
+      const { error } = await supabase
+        .from('media_gallery')
+        .update({ cloudinary_public_id: newCloudinaryId, url: cloudUrl } as any)
+        .eq('id', editingCloudinaryId.id);
+      if (error) throw error;
+      toast.success("Cloudinary ID updated — image synced across site ✅");
+      setEditingCloudinaryId(null);
+      fetchMedia();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setSavingCloudinary(false);
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -116,7 +149,7 @@ export default function MediaGallery() {
             <Plus className="w-4 h-4" />
             Upload Media
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Upload Media</DialogTitle>
               <DialogDescription>Add new photos, videos, or documents to the gallery.</DialogDescription>
@@ -185,7 +218,7 @@ export default function MediaGallery() {
                 >
                   <Card className="group relative overflow-hidden border-none shadow-md bg-card/50 backdrop-blur-sm aspect-square rounded-2xl">
                     <img 
-                      src={item.url || `https://picsum.photos/seed/${item.id}/800/600`} 
+                      src={getCloudinaryUrl(item)} 
                       alt={item.title}
                       className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-110"
                       referrerPolicy="no-referrer"
@@ -206,6 +239,9 @@ export default function MediaGallery() {
                               <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={() => setEditingMedia(item)}>
                                 <Edit2 className="w-4 h-4 mr-2" /> Edit Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => { setEditingCloudinaryId(item); setNewCloudinaryId(item.cloudinary_public_id || ''); }}>
+                                <Edit2 className="w-4 h-4 mr-2" /> Edit Cloudinary ID
                               </DropdownMenuItem>
                               <DropdownMenuItem>
                                 <Download className="w-4 h-4 mr-2" /> Download
@@ -270,7 +306,7 @@ export default function MediaGallery() {
               onClick={(e) => e.stopPropagation()}
             >
               <img 
-                src={selectedMedia.url} 
+                src={getCloudinaryUrl(selectedMedia)} 
                 alt={selectedMedia.title}
                 className="w-full h-full object-contain"
                 referrerPolicy="no-referrer"
@@ -286,7 +322,7 @@ export default function MediaGallery() {
 
       {/* Edit Dialog */}
       <Dialog open={!!editingMedia} onOpenChange={(open) => !open && setEditingMedia(null)}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Media Details</DialogTitle>
             <DialogDescription>Update the title or category for this media.</DialogDescription>
@@ -301,6 +337,50 @@ export default function MediaGallery() {
               onCancel={() => setEditingMedia(null)} 
             />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Cloudinary ID Edit Dialog */}
+      <Dialog open={!!editingCloudinaryId} onOpenChange={open => !open && setEditingCloudinaryId(null)}>
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle>Edit Cloudinary Public ID</DialogTitle>
+            <DialogDescription>
+              Updating this ID will change the image displayed across the entire site wherever this media is referenced.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            {newCloudinaryId && CLOUD_NAME && (
+              <div className="rounded-xl overflow-hidden aspect-video bg-muted">
+                <img
+                  src={`https://res.cloudinary.com/${CLOUD_NAME}/image/upload/${newCloudinaryId}`}
+                  alt="Preview"
+                  className="w-full h-full object-cover"
+                  onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+              </div>
+            )}
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Cloudinary Public ID</label>
+              <input
+                className="w-full h-11 rounded-xl bg-muted/30 border-none px-4 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30"
+                value={newCloudinaryId}
+                onChange={e => setNewCloudinaryId(e.target.value)}
+                placeholder="e.g. ambassadors/gallery/image_abc123"
+              />
+              <p className="text-[10px] text-muted-foreground">Find this in your Cloudinary Media Library</p>
+            </div>
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setEditingCloudinaryId(null)} className="px-4 py-2 rounded-xl bg-muted text-sm font-bold">Cancel</button>
+              <button
+                onClick={handleSaveCloudinaryId}
+                disabled={savingCloudinary}
+                className="px-6 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-bold disabled:opacity-50"
+              >
+                {savingCloudinary ? 'Saving...' : 'Save & Sync'}
+              </button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

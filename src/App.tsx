@@ -32,6 +32,8 @@ import LiveStreamManager from "./components/LiveStreamManager";
 import ContactInbox from "./components/ContactInbox";
 import BlogPosts from "./components/BlogPosts";
 import DevoManager from "./components/DevoManager";
+import NewsletterManager from "./components/NewsletterManager";
+import ApprovalsCenter from "./components/ApprovalsCenter";
 import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
@@ -190,6 +192,10 @@ function AppContent() {
         return <BlogPosts />;
       case "devotionals":
         return <DevoManager />;
+      case "newsletter":
+        return <NewsletterManager />;
+      case "approvals":
+        return <ApprovalsCenter />;
       default:
         return <Dashboard />;
     }

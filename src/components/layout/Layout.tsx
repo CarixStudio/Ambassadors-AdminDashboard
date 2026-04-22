@@ -37,7 +37,8 @@ import {
   Tv,
   Inbox,
   PenLine,
-  Sun
+  Sun,
+  Mail
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -111,10 +112,11 @@ export default function Layout({ children, onTabChange, activeTab }: { children:
 
   const menuItems = [
     { id: "dashboard", icon: LayoutDashboard, label: "Dashboard", category: "Main" },
+    { id: "approvals", icon: ClipboardCheck, label: "Approvals Center", category: "Main" },
     { id: "members", icon: Users, label: "Members", category: "Community" },
     { id: "ministries", icon: ShieldCheck, label: "Ministries", category: "Community" },
     { id: "departments", icon: Building2, label: "Departments", category: "Community" },
-    { id: "volunteers", icon: Heart, label: "Volunteers", category: "Community" },
+    { id: "volunteers", icon: Heart, label: "Service Team", category: "Community" },
     { id: "master-rota", icon: ClipboardList, label: "Master Rota", category: "Community" },
     { id: "events", icon: Calendar, label: "Events", category: "Engagement" },
     { id: "event-registrations", icon: ClipboardCheck, label: "Registrations", category: "Engagement" },
@@ -123,6 +125,7 @@ export default function Layout({ children, onTabChange, activeTab }: { children:
     { id: "contact-inbox", icon: Inbox, label: "Contact Inbox", category: "Engagement" },
     { id: "prayer-wall", icon: MessageSquare, label: "Prayer Wall", category: "Engagement" },
     { id: "milestones", icon: PartyPopper, label: "Milestones", category: "Engagement" },
+    { id: "newsletter", icon: Mail, label: "Newsletter", category: "Engagement" },
     { id: "sermons", icon: BookOpen, label: "Sermons", category: "Resources" },
     { id: "blog-posts", icon: PenLine, label: "Blog Posts", category: "Resources" },
     { id: "devotionals", icon: Sun, label: "Devotionals", category: "Resources" },

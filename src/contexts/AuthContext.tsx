@@ -94,7 +94,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  const fetchRole = async (userId: string) => {
+  const fetchRole = async (userId: string, retries = 2) => {
     try {
       // Fetch from user_roles -> roles table as per the system RBAC
       const rolePromise = supabase
@@ -102,7 +102,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .select(`
           role_id,
           roles:role_id (
-            name
+            name,
+            permissions
           )
         `)
         .eq('user_id', userId)
@@ -110,19 +111,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .single();
 
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Role fetch timeout')), 3000)
+        setTimeout(() => reject(new Error('Role fetch timeout')), 5000)
       );
 
       const result = await Promise.race([rolePromise, timeoutPromise]) as any;
       
       if (result.error) {
-        console.warn('Error fetching role, defaulting to member:', result.error);
-        setRole('member');
-        return;
+        if (result.error.code === 'PGRST116') {
+          // No role found, default to member
+          setRole('member');
+          setPermissions({});
+          return;
+        }
+        throw result.error;
       }
       
       if (result.data && result.data.roles) {
-        // Handle both object and array response from supabase
         const roleData = Array.isArray(result.data.roles) ? result.data.roles[0] : result.data.roles;
         setRole(roleData.name.toLowerCase() as Role);
         setPermissions(roleData.permissions || {});
@@ -130,11 +134,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setRole("member");
         setPermissions({});
       }
-    } catch (err) {
-      console.warn('Role fetch failed or timed out, defaulting to member:', err);
+    } catch (err: any) {
+      if (retries > 0) {
+        console.warn(`Role fetch failed, retrying... (${retries} left)`, err);
+        setTimeout(() => fetchRole(userId, retries - 1), 1000);
+        return;
+      }
+      console.warn('Role fetch failed or timed out after retries, defaulting to member:', err);
       setRole('member');
     } finally {
-      setLoading(false);
+      if (retries === 0) setLoading(false);
     }
   };
 

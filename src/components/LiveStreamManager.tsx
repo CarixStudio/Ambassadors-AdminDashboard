@@ -65,6 +65,24 @@ export default function LiveStreamManager() {
     fetchStreams();
   };
 
+  const handleQuickGoLive = async () => {
+    const title = prompt("Enter stream title:", "Live Service - " + new Date().toLocaleDateString());
+    if (!title) return;
+
+    const { data, error } = await supabase.from("live_streams").insert({
+      title,
+      status: "live",
+      scheduled_start: new Date().toISOString(),
+      actual_start: new Date().toISOString(),
+      platform: "youtube",
+      is_featured: true
+    }).select().single();
+
+    if (error) { toast.error(error.message); return; }
+    toast.success("🔴 Quick stream started!");
+    fetchStreams();
+  };
+
   const handleEndStream = async (id: string) => {
     const { error } = await supabase.from("live_streams").update({ status: "ended", actual_end: new Date().toISOString() }).eq("id", id);
     if (error) { toast.error(error.message); return; }
@@ -85,8 +103,8 @@ export default function LiveStreamManager() {
     if (!form.title || !form.scheduled_start) { toast.error("Title and start time are required."); return; }
     const payload = { ...form, scheduled_start: new Date(form.scheduled_start).toISOString(), scheduled_end: form.scheduled_end ? new Date(form.scheduled_end).toISOString() : null };
     const { error } = editingStream
-      ? await supabase.from("live_streams").update(payload).eq("id", editingStream.id)
-      : await supabase.from("live_streams").insert(payload);
+      ? await supabase.from("live_streams").update(payload as any).eq("id", editingStream.id)
+      : await supabase.from("live_streams").insert(payload as any);
     if (error) { toast.error(error.message); return; }
     toast.success(editingStream ? "Stream updated!" : "Stream scheduled!");
     setIsFormOpen(false);
@@ -114,9 +132,14 @@ export default function LiveStreamManager() {
           </h1>
           <p className="text-muted-foreground">Schedule and manage church live streams. Go live directly from here.</p>
         </div>
-        <Button onClick={openNew} className="gap-2 shadow-lg shadow-primary/20">
-          <Plus className="w-4 h-4" /> Schedule Stream
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleQuickGoLive} className="gap-2 border-red-500/20 text-red-500 hover:bg-red-500/10">
+            <Radio className="w-4 h-4" /> Go Live Now
+          </Button>
+          <Button onClick={openNew} className="gap-2 shadow-lg shadow-primary/20">
+            <Plus className="w-4 h-4" /> Schedule Stream
+          </Button>
+        </div>
       </div>
 
       {/* LIVE NOW banner */}
@@ -181,7 +204,7 @@ export default function LiveStreamManager() {
                         </p>
                       </div>
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
+                        <DropdownMenuTrigger>
                           <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"><MoreVertical className="w-4 h-4" /></Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
@@ -266,7 +289,7 @@ export default function LiveStreamManager() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Platform</Label>
-                <Select value={form.platform} onValueChange={v => setForm(f => ({ ...f, platform: v }))}>
+                <Select value={form.platform} onValueChange={v => setForm(f => ({ ...f, platform: v ?? 'youtube' }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="youtube">YouTube</SelectItem>
