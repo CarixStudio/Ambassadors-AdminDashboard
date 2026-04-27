@@ -46,50 +46,51 @@ function AppContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#010101] overflow-hidden">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#010101] overflow-hidden p-4">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="relative flex flex-col items-center"
+          className="relative flex flex-col items-center w-full max-w-md"
         >
-          <div className="w-20 h-20 bg-primary/10 rounded-[2.5rem] flex items-center justify-center mb-8 relative">
-            <div className="absolute inset-0 bg-primary/20 rounded-[2.5rem] blur-2xl animate-pulse" />
-            <Shield className="w-10 h-10 text-primary relative z-10" />
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-primary/10 rounded-[2rem] sm:rounded-[2.5rem] flex items-center justify-center mb-6 sm:mb-8 relative">
+            <div className="absolute inset-0 bg-primary/20 rounded-[2rem] sm:rounded-[2.5rem] blur-2xl animate-pulse" />
+            <Shield className="w-8 h-8 sm:w-10 sm:h-10 text-primary relative z-10" />
             <motion.div 
               initial={{ rotate: 0 }}
               animate={{ rotate: 360 }}
               transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-              className="absolute inset-0 border-2 border-primary/20 rounded-[2.5rem] border-t-primary"
+              className="absolute inset-0 border-2 border-primary/20 rounded-[2rem] sm:rounded-[2.5rem] border-t-primary"
             />
           </div>
           
-          <div className="flex flex-col items-center gap-2">
-            <h1 className="text-xl sm:text-4xl md:text-5xl font-black tracking-tighter text-white flex flex-wrap justify-center items-center gap-1 px-4 text-center">
-              <div className="flex items-center gap-1">
+          <div className="flex flex-col items-center gap-2 w-full">
+            <h1 className="text-lg sm:text-4xl md:text-5xl font-black tracking-tighter text-white flex flex-wrap justify-center items-center gap-1 px-2 text-center leading-tight">
+              <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap justify-center">
                 { "AMBASSADORS".split("").map((char, i) => (
                   <motion.span
                     key={i}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 + i * 0.05, duration: 0.4 }}
+                    className="inline-block"
                   >
                     {char}
                   </motion.span>
                 ))}
+                <motion.span 
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 1.2, duration: 0.5 }}
+                  className="text-primary ml-1 sm:ml-2"
+                >
+                  ADMIN
+                </motion.span>
               </div>
-              <motion.span 
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 1.2, duration: 0.5 }}
-                className="text-primary ml-2"
-              >
-                ADMIN
-              </motion.span>
             </h1>
 
             
-            <div className="flex items-center gap-4 w-64 h-1 bg-white/5 rounded-full overflow-hidden mt-8 relative">
+            <div className="flex items-center gap-4 w-full max-w-[200px] sm:max-w-[256px] h-1 bg-white/5 rounded-full overflow-hidden mt-6 sm:mt-8 relative">
               <motion.div 
                 initial={{ width: 0, left: "-100%" }}
                 animate={{ width: "100%", left: "100%" }}
@@ -102,7 +103,7 @@ function AppContent() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.5 }}
               transition={{ delay: 1.5, duration: 1 }}
-              className="text-[10px] font-bold uppercase tracking-[0.4em] text-white mt-8"
+              className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.3em] sm:tracking-[0.4em] text-white mt-6 sm:mt-8 text-center"
             >
               Initializing Secure Infrastructure
             </motion.p>

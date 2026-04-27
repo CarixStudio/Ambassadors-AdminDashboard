@@ -1,4 +1,5 @@
 import * as React from "react";
+import { createClient } from '@supabase/supabase-js';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -28,44 +29,50 @@ import { auditRepo } from "@/src/lib/audit";
 import { useAuth } from "@/src/contexts/AuthContext";
 
 const memberSchema = z.object({
-  title: z.enum(['Mr', 'Mrs', 'Ms', 'Dr', 'Pastor', 'Deacon', 'Deaconess', 'Elder', 'Minister', 'Bishop', 'Evangelist', 'Apostle', 'Prophet']).optional(),
+  title: z.enum(['Mr', 'Mrs', 'Ms', 'Dr', 'Pastor', 'Deacon', 'Deaconess', 'Elder', 'Minister', 'Bishop', 'Evangelist', 'Apostle', 'Prophet']),
   first_name: z.string().min(2, "First name is required"),
   last_name: z.string().min(2, "Last name is required"),
-  middle_name: z.string().optional(),
-  preferred_name: z.string().optional(),
+  middle_name: z.string(),
+  preferred_name: z.string(),
   email: z.string().email("Invalid email address"),
-  phone: z.string().optional(),
-  alt_phone: z.string().optional(),
-  whatsapp_number: z.string().optional(),
-  gender: z.enum(["male", "female", "prefer_not_to_say"]).optional(),
-  date_of_birth: z.string().optional(),
-  marital_status: z.enum(["single", "married", "widowed", "divorced", "prefer_not_to_say"]).optional(),
-  wedding_anniversary: z.string().optional(),
-  member_id: z.string().optional(),
+  phone: z.string(),
+  alt_phone: z.string(),
+  whatsapp_number: z.string(),
+  gender: z.enum(["male", "female", "prefer_not_to_say"]),
+  date_of_birth: z.string(),
+  marital_status: z.enum(["single", "married", "widowed", "divorced", "prefer_not_to_say"]),
+  wedding_anniversary: z.string(),
+  member_id: z.string(),
   status: z.enum(["active", "inactive", "suspended", "pending_verification"]),
-  is_member: z.boolean().default(false),
-  is_baptized: z.boolean().default(false),
-  salvation_date: z.string().optional(),
-  baptism_date: z.string().optional(),
-  previous_church: z.string().optional(),
-  occupation: z.string().optional(),
-  employer: z.string().optional(),
-  bio: z.string().optional(),
-  address_line_1: z.string().optional(),
-  address_line_2: z.string().optional(),
-  city: z.string().optional(),
-  county: z.string().optional(),
-  postal_code: z.string().optional(),
-  country: z.string().default("United Kingdom"),
-  emergency_contact_name: z.string().optional(),
-  emergency_contact_phone: z.string().optional(),
-  emergency_contact_relationship: z.string().optional(),
+  is_member: z.boolean(),
+  is_baptized: z.boolean(),
+  salvation_date: z.string(),
+  baptism_date: z.string(),
+  previous_church: z.string(),
+  occupation: z.string(),
+  employer: z.string(),
+  bio: z.string(),
+  address_line_1: z.string(),
+  address_line_2: z.string(),
+  city: z.string(),
+  county: z.string(),
+  postal_code: z.string(),
+  country: z.string(),
+  emergency_contact_name: z.string(),
+  emergency_contact_phone: z.string(),
+  emergency_contact_relationship: z.string(),
 });
 
 type MemberFormValues = z.infer<typeof memberSchema>;
 
+interface MemberData extends MemberFormValues {
+  id: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 interface MemberFormProps {
-  initialData?: any;
+  initialData?: Partial<MemberData>;
   onSuccess: () => void;
   onCancel: () => void;
 }
@@ -100,19 +107,42 @@ export default function MemberForm({ initialData, onSuccess, onCancel }: MemberF
     }
   };
 
-  const form = useForm<z.infer<typeof memberSchema>>({
+  const form = useForm<MemberFormValues>({
     resolver: zodResolver(memberSchema),
-    defaultValues: initialData || {
-      first_name: "",
-      last_name: "",
-      title: "Mr",
-      email: "",
-      phone: "",
-      status: "active",
-      country: "United Kingdom",
-      is_member: false,
-      is_baptized: false,
-    },
+    defaultValues: {
+      first_name: initialData?.first_name || "",
+      last_name: initialData?.last_name || "",
+      middle_name: initialData?.middle_name || "",
+      preferred_name: initialData?.preferred_name || "",
+      title: initialData?.title || "Mr",
+      email: initialData?.email || "",
+      phone: initialData?.phone || "",
+      alt_phone: initialData?.alt_phone || "",
+      whatsapp_number: initialData?.whatsapp_number || "",
+      gender: initialData?.gender || "male",
+      date_of_birth: initialData?.date_of_birth || "",
+      marital_status: initialData?.marital_status || "single",
+      wedding_anniversary: initialData?.wedding_anniversary || "",
+      member_id: initialData?.member_id || "",
+      status: initialData?.status || "active",
+      is_member: initialData?.is_member ?? false,
+      is_baptized: initialData?.is_baptized ?? false,
+      salvation_date: initialData?.salvation_date || "",
+      baptism_date: initialData?.baptism_date || "",
+      previous_church: initialData?.previous_church || "",
+      occupation: initialData?.occupation || "",
+      employer: initialData?.employer || "",
+      bio: initialData?.bio || "",
+      address_line_1: initialData?.address_line_1 || "",
+      address_line_2: initialData?.address_line_2 || "",
+      city: initialData?.city || "",
+      county: initialData?.county || "",
+      postal_code: initialData?.postal_code || "",
+      country: initialData?.country || "Nigeria",
+      emergency_contact_name: initialData?.emergency_contact_name || "",
+      emergency_contact_phone: initialData?.emergency_contact_phone || "",
+      emergency_contact_relationship: initialData?.emergency_contact_relationship || "",
+    } as MemberFormValues,
   });
 
   React.useEffect(() => {
@@ -121,7 +151,7 @@ export default function MemberForm({ initialData, onSuccess, onCancel }: MemberF
     }
   }, [initialData, form]);
 
-  async function onSubmit(values: any) {
+  async function onSubmit(values: MemberFormValues) {
     setLoading(true);
     try {
       if (initialData?.id) {
@@ -145,12 +175,39 @@ export default function MemberForm({ initialData, onSuccess, onCancel }: MemberF
         
         toast.success("Member updated successfully");
       } else {
-        const newId = crypto.randomUUID();
-        const { error } = await supabase
-          .from("profiles")
-          .insert([{ ...values, id: newId }]); 
+        // SILENT SIGNUP FLOW to avoid FK violation on profiles.id
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
         
-        if (error) throw error;
+        const tempSupabase = createClient(supabaseUrl, supabaseAnonKey, {
+          auth: { persistSession: false }
+        });
+        
+        const tempPassword = Math.random().toString(36).slice(-12) + "A1!";
+        
+        const { data: signUpData, error: signUpError } = await tempSupabase.auth.signUp({
+          email: values.email,
+          password: tempPassword,
+          options: {
+            data: {
+              first_name: values.first_name,
+              last_name: values.last_name
+            }
+          }
+        });
+        
+        if (signUpError) throw signUpError;
+        const newId = signUpData.user?.id;
+        if (!newId) throw new Error("Failed to create auth user");
+
+        // The trigger 'handle_new_user' already created the profile.
+        // We now update it with the additional values from the form.
+        const { error: updateError } = await supabase
+          .from("profiles")
+          .update(values)
+          .eq("id", newId);
+        
+        if (updateError) throw updateError;
 
         // Audit log for insert
         if (currentUser) {
@@ -163,7 +220,7 @@ export default function MemberForm({ initialData, onSuccess, onCancel }: MemberF
           });
         }
 
-        toast.success("Member added successfully");
+        toast.success("Member added successfully. A verification email has been sent.");
       }
       onSuccess();
     } catch (error: any) {
@@ -174,7 +231,7 @@ export default function MemberForm({ initialData, onSuccess, onCancel }: MemberF
   }
 
   const nextStep = async () => {
-    const fields = step === 0 
+    const fields: (keyof MemberFormValues)[] = step === 0 
       ? ["title", "first_name", "last_name", "email", "phone"] 
       : step === 1 
       ? ["member_id", "status"] 
@@ -182,7 +239,6 @@ export default function MemberForm({ initialData, onSuccess, onCancel }: MemberF
       ? ["occupation"] 
       : [];
     
-    // @ts-ignore
     const isValid = await form.trigger(fields);
     if (isValid) setStep(s => s + 1);
   };
@@ -323,7 +379,7 @@ export default function MemberForm({ initialData, onSuccess, onCancel }: MemberF
                   <FormItem>
                     <FormLabel>Phone</FormLabel>
                     <FormControl>
-                      <Input placeholder="+44..." {...field} />
+                      <Input placeholder="+234..." {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

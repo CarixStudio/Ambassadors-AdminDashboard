@@ -8,7 +8,9 @@ import {
   Download,
   Filter,
   Save,
-  Loader2
+  Loader2,
+  QrCode,
+  Printer
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -270,6 +272,57 @@ export default function Attendance() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="border-none shadow-lg bg-card/50 backdrop-blur-md overflow-hidden print:shadow-none">
+        <CardHeader className="bg-primary/5 pb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <CardTitle className="text-xl flex items-center gap-2">
+                <QrCode className="w-6 h-6 text-primary" />
+                Static Entrance QR Code
+              </CardTitle>
+              <CardDescription>Print this QR code and place it at the church entrance for automated check-ins.</CardDescription>
+            </div>
+            <Button variant="outline" className="gap-2 shrink-0 no-print" onClick={() => window.print()}>
+              <Printer className="w-4 h-4" />
+              Print for Entrance
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-8 flex flex-col md:flex-row items-center gap-12">
+          <div className="bg-white p-6 rounded-[2.5rem] shadow-2xl shadow-primary/10 border-4 border-primary/5 relative group">
+            <img 
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent("https://ambassadors-assembly-web.onrender.com/my-account/attendance/mark")}`} 
+              alt="Entrance QR Code" 
+              className="w-[200px] h-[200px] sm:w-[250px] sm:h-[250px]"
+            />
+            <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-[2rem]" />
+          </div>
+          <div className="space-y-6 max-w-md no-print">
+            <div className="space-y-2">
+              <h4 className="font-bold text-lg">How it works</h4>
+              <ul className="space-y-3 text-sm text-muted-foreground">
+                <li className="flex gap-3">
+                  <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold shrink-0">1</div>
+                  <span>Members scan this code with their phone camera upon arrival.</span>
+                </li>
+                <li className="flex gap-3">
+                  <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold shrink-0">2</div>
+                  <span>The system automatically detects the active service (Sunday/Midweek) or ongoing events.</span>
+                </li>
+                <li className="flex gap-3">
+                  <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold shrink-0">3</div>
+                  <span>If multiple activities overlap, the user is prompted to select which one they are attending on their dashboard.</span>
+                </li>
+              </ul>
+            </div>
+            <div className="p-4 bg-muted/50 rounded-2xl border border-dashed">
+              <p className="text-xs font-medium text-muted-foreground mb-1">Target Gateway:</p>
+              <code className="text-[10px] break-all text-primary font-mono">https://ambassadors-assembly-web.onrender.com/my-account/attendance/mark</code>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="md:col-span-1 border-none shadow-md bg-card/50 backdrop-blur-sm">

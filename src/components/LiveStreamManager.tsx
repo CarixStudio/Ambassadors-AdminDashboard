@@ -33,6 +33,9 @@ export default function LiveStreamManager() {
     status: "scheduled",
   });
 
+  const [isQuickLiveOpen, setIsQuickLiveOpen] = React.useState(false);
+  const [quickTitle, setQuickTitle] = React.useState("");
+
   const fetchStreams = async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -61,16 +64,20 @@ export default function LiveStreamManager() {
   const handleGoLive = async (id: string) => {
     const { error } = await supabase.from("live_streams").update({ status: "live", actual_start: new Date().toISOString() }).eq("id", id);
     if (error) { toast.error(error.message); return; }
-    toast.success("🔴 You are now LIVE!");
+    toast.success("🔴 You are now LIVE!", {
+      description: "The stream has been featured on the main watch page.",
+    });
     fetchStreams();
   };
 
   const handleQuickGoLive = async () => {
-    const title = prompt("Enter stream title:", "Live Service - " + new Date().toLocaleDateString());
-    if (!title) return;
+    if (!quickTitle) {
+      toast.error("Please enter a stream title");
+      return;
+    }
 
     const { data, error } = await supabase.from("live_streams").insert({
-      title,
+      title: quickTitle,
       status: "live",
       scheduled_start: new Date().toISOString(),
       actual_start: new Date().toISOString(),
@@ -79,22 +86,25 @@ export default function LiveStreamManager() {
     }).select().single();
 
     if (error) { toast.error(error.message); return; }
-    toast.success("🔴 Quick stream started!");
+    toast.success("🔴 Quick stream started!", {
+      description: `Now live: ${quickTitle}`
+    });
+    setQuickTitle("");
+    setIsQuickLiveOpen(false);
     fetchStreams();
   };
 
   const handleEndStream = async (id: string) => {
     const { error } = await supabase.from("live_streams").update({ status: "ended", actual_end: new Date().toISOString() }).eq("id", id);
     if (error) { toast.error(error.message); return; }
-    toast.success("Stream ended.");
+    toast.success("Stream ended successfully.");
     fetchStreams();
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this stream?")) return;
     const { error } = await supabase.from("live_streams").delete().eq("id", id);
     if (error) { toast.error(error.message); return; }
-    toast.success("Deleted.");
+    toast.success("Stream deleted.");
     fetchStreams();
   };
 
@@ -133,7 +143,10 @@ export default function LiveStreamManager() {
           <p className="text-muted-foreground">Schedule and manage church live streams. Go live directly from here.</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handleQuickGoLive} className="gap-2 border-red-500/20 text-red-500 hover:bg-red-500/10">
+          <Button variant="outline" onClick={() => {
+            setQuickTitle("Live Service - " + new Date().toLocaleDateString());
+            setIsQuickLiveOpen(true);
+          }} className="gap-2 border-red-500/20 text-red-500 hover:bg-red-500/10">
             <Radio className="w-4 h-4" /> Go Live Now
           </Button>
           <Button onClick={openNew} className="gap-2 shadow-lg shadow-primary/20">
@@ -333,6 +346,39 @@ export default function LiveStreamManager() {
               <Button type="submit">{editingStream ? "Save Changes" : "Schedule Stream"}</Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Quick Live Dialog */}
+      <Dialog open={isQuickLiveOpen} onOpenChange={setIsQuickLiveOpen}>
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Radio className="w-5 h-5 animate-pulse" />
+              Go Live Instantly
+            </DialogTitle>
+            <DialogDescription>
+              This will create a new live stream entry and set it to active immediately.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="quick-title">Stream Title</Label>
+              <Input 
+                id="quick-title" 
+                placeholder="e.g. Sunday Morning Service" 
+                value={quickTitle} 
+                onChange={e => setQuickTitle(e.target.value)}
+                autoFocus
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setIsQuickLiveOpen(false)}>Cancel</Button>
+            <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={handleQuickGoLive}>
+              Start Broadcasting
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

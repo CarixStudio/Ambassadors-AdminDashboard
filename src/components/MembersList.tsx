@@ -501,7 +501,7 @@ export default function MembersList({ onTabChange }: { onTabChange?: (tab: strin
       </div>
     </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-3 sm:gap-4">
         <AnimatePresence mode="popLayout">
           {loading ? (
             Array.from({ length: 4 }).map((_, i) => (
@@ -529,8 +529,8 @@ export default function MembersList({ onTabChange }: { onTabChange?: (tab: strin
                   transition={{ delay: i * 0.05 }}
                 >
                   <Card className="group border-none shadow-md bg-card/50 backdrop-blur-sm hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 overflow-hidden">
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-4">
+                    <CardContent className="p-3 sm:p-6">
+                      <div className="flex items-start gap-2 sm:gap-4">
                         <div className="flex items-center pt-7">
                           <input 
                             type="checkbox" 
@@ -539,10 +539,10 @@ export default function MembersList({ onTabChange }: { onTabChange?: (tab: strin
                             onChange={() => toggleMemberSelection(member.id)}
                           />
                         </div>
-                        <div className="relative">
-                          <Avatar className="h-20 w-20 border-4 border-background shadow-lg group-hover:scale-105 transition-transform">
+                        <div className="relative shrink-0">
+                          <Avatar className="h-12 w-12 sm:h-20 sm:w-20 border-2 sm:border-4 border-background shadow-lg group-hover:scale-105 transition-transform">
                             <AvatarImage src={member.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.id}`} />
-                            <AvatarFallback>{member.first_name?.[0]}{member.last_name?.[0]}</AvatarFallback>
+                            <AvatarFallback className="text-xs sm:text-base">{member.first_name?.[0]}{member.last_name?.[0]}</AvatarFallback>
                           </Avatar>
                           <div className={cn(
                             "absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-background flex items-center justify-center shadow-sm",
@@ -559,7 +559,7 @@ export default function MembersList({ onTabChange }: { onTabChange?: (tab: strin
                                 setViewingMember(member);
                                 fetchNotes(member.id);
                               }}
-                              className="font-bold text-lg truncate hover:text-primary hover:underline transition-colors text-left"
+                              className="font-bold text-sm sm:text-lg truncate hover:text-primary hover:underline transition-colors text-left"
                             >
                               {member.first_name} {member.last_name}
                             </button>
@@ -587,27 +587,27 @@ export default function MembersList({ onTabChange }: { onTabChange?: (tab: strin
                             </DropdownMenu>
                           </div>
                           
-                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                          <div className="flex flex-col sm:flex-row flex-wrap gap-x-4 gap-y-1 text-[10px] sm:text-sm text-muted-foreground">
                             <div className="flex items-center gap-1.5">
-                              <Mail className="w-3.5 h-3.5" />
-                              <span className="truncate">{member.email}</span>
+                              <Mail className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                              <span className="truncate max-w-[80px] sm:max-w-none">{member.email}</span>
                             </div>
                             <div className="flex items-center gap-1.5">
-                              <Phone className="w-3.5 h-3.5" />
+                              <Phone className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                               <span>{member.phone || 'No phone'}</span>
                             </div>
                           </div>
 
                           <div className="pt-3 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[10px] font-bold uppercase tracking-wider">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2">
+                              <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[8px] sm:text-[10px] font-bold uppercase tracking-wider">
                                 {member.member_id || 'MEMBER'}
                               </Badge>
-                              <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider">
+                              <Badge variant="outline" className="text-[8px] sm:text-[10px] font-bold uppercase tracking-wider">
                                 {member.status}
                               </Badge>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="hidden sm:flex items-center gap-2">
                               <div className="text-[10px] font-bold text-muted-foreground uppercase">Profile</div>
                               <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
                                 <motion.div 
@@ -655,14 +655,17 @@ export default function MembersList({ onTabChange }: { onTabChange?: (tab: strin
 
       {/* View Profile Sheet */}
       <Sheet open={!!viewingMember} onOpenChange={(open) => !open && setViewingMember(null)}>
-        <SheetContent className="sm:max-w-[500px] overflow-y-auto w-full">
-          <SheetHeader className="pb-6 border-b">
-            <SheetTitle>Member Profile</SheetTitle>
-            <SheetDescription>Detailed view of the member's information.</SheetDescription>
-          </SheetHeader>
-          
+        <SheetContent side="right" className="sm:max-w-[600px] w-full h-full overflow-y-auto p-0 border-none shadow-2xl">
           {viewingMember && (
-            <div className="py-6 space-y-8">
+            <div className="h-full flex flex-col bg-background">
+            <div className="p-6 border-b bg-card/30 backdrop-blur-md sticky top-0 z-20">
+              <SheetHeader>
+                <SheetTitle className="text-2xl font-black uppercase tracking-tight">Member Profile</SheetTitle>
+                <SheetDescription>Detailed record and pastoral history.</SheetDescription>
+              </SheetHeader>
+            </div>
+            
+            <div className="flex-1 px-6 pb-20">
               <div className="flex flex-col items-center text-center space-y-4">
                 <Avatar className="h-32 w-32 border-4 border-background shadow-xl">
                   <AvatarImage src={viewingMember.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${viewingMember.id}`} />
@@ -813,6 +816,7 @@ export default function MembersList({ onTabChange }: { onTabChange?: (tab: strin
                 </Button>
               </div>
             </div>
+          </div>
           )}
         </SheetContent>
       </Sheet>
