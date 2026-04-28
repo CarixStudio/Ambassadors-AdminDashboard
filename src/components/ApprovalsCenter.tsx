@@ -105,7 +105,7 @@ export default function ApprovalsCenter() {
       setDepartments(dData || []);
 
       setData({
-        staff: (staff || []).map(s => ({ ...s, _selectedRole: s.role_claim && ['Pastor','Bishop','Apostle','Prophet','Evangelist'].includes(s.role_claim) ? 'pastor' : (['Elder','Deacon','Deaconess','Minister'].includes(s.role_claim) ? 'leader' : 'worker') })),
+        staff: (staff || []).map(s => ({ ...s, _selectedRole: s.role_claim && ['Pastor','Bishop','Apostle','Prophet','Evangelist'].includes(s.role_claim as string) ? 'pastor' : (s.role_claim && ['Elder','Deacon','Deaconess','Minister'].includes(s.role_claim as string) ? 'leader' : 'worker') })),
         volunteers: volunteers || [],
         ministries: ministries || [],
         testimonies: testimonies || [],
