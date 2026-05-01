@@ -30,12 +30,12 @@ const eventSchema = z.object({
   title: z.string().min(2, "Title is required"),
   description: z.string().min(10, "Description is required"),
   location_name: z.string().min(2, "Location is required"),
-  start_date: z.preprocess((val) => (val === "" ? null : val), z.string().nullable()),
-  end_date: z.preprocess((val) => (val === "" ? null : val), z.string().nullable()),
-  event_type: z.string().optional(),
-  status: z.enum(["upcoming", "completed", "cancelled"]),
+  start_date: z.string().min(1, "Start date is required"),
+  end_date: z.string().optional(),
+  event_type: z.enum(["service", "conference", "retreat", "workshop", "outreach", "fellowship", "youth", "prayer_meeting", "other", "community_impact"]),
+  status: z.enum(["upcoming", "ongoing", "completed", "cancelled", "postponed"]),
   cover_image_url: z.string().optional(),
-  capacity: z.number().min(0).optional(),
+  capacity: z.number().min(0).default(0),
 });
 
 type EventFormValues = z.infer<typeof eventSchema>;
@@ -49,7 +49,7 @@ interface EventFormProps {
 export default function EventForm({ initialData, onSuccess, onCancel }: EventFormProps) {
   const [loading, setLoading] = React.useState(false);
 
-  const form = useForm<z.input<typeof eventSchema>>({
+  const form = useForm<EventFormValues>({
     resolver: zodResolver(eventSchema),
     defaultValues: initialData ? {
       ...initialData,
@@ -70,21 +70,24 @@ export default function EventForm({ initialData, onSuccess, onCancel }: EventFor
     },
   });
 
-  async function onSubmit(values: any) {
+  async function onSubmit(values: EventFormValues) {
     setLoading(true);
     try {
+      const payload = {
+        ...values,
+        event_type: values.event_type as any,
+        status: values.status as any,
+        slug: values.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')
+      };
+
       if (initialData?.id) {
         const { error } = await supabase
           .from("events")
-          .update(values)
+          .update(payload)
           .eq("id", initialData.id);
         if (error) throw error;
         toast.success("Event updated successfully");
       } else {
-        const payload = {
-          ...values,
-          slug: values.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')
-        };
         const { error } = await supabase
           .from("events")
           .insert([payload]);
@@ -103,7 +106,7 @@ export default function EventForm({ initialData, onSuccess, onCancel }: EventFor
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
-          control={form.control}
+          control={form.control as any}
           name="title"
           render={({ field }) => (
             <FormItem>
@@ -117,7 +120,7 @@ export default function EventForm({ initialData, onSuccess, onCancel }: EventFor
         />
 
         <FormField
-          control={form.control}
+          control={form.control as any}
           name="description"
           render={({ field }) => (
             <FormItem>
@@ -136,26 +139,26 @@ export default function EventForm({ initialData, onSuccess, onCancel }: EventFor
 
         <div className="grid grid-cols-2 gap-4">
           <FormField
-            control={form.control}
+            control={form.control as any}
             name="start_date"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Start Date & Time</FormLabel>
                 <FormControl>
-                  <Input type="datetime-local" {...field} />
+                  <Input type="datetime-local" {...field} value={(field.value as string) || ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
           <FormField
-            control={form.control}
+            control={form.control as any}
             name="end_date"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>End Date & Time</FormLabel>
                 <FormControl>
-                  <Input type="datetime-local" {...field} />
+                  <Input type="datetime-local" {...field} value={(field.value as string) || ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -164,7 +167,7 @@ export default function EventForm({ initialData, onSuccess, onCancel }: EventFor
         </div>
 
         <FormField
-          control={form.control}
+          control={form.control as any}
           name="location_name"
           render={({ field }) => (
             <FormItem>
@@ -179,7 +182,7 @@ export default function EventForm({ initialData, onSuccess, onCancel }: EventFor
 
         <div className="grid grid-cols-2 gap-4">
           <FormField
-            control={form.control}
+            control={form.control as any}
             name="event_type"
             render={({ field }) => (
               <FormItem>
@@ -208,7 +211,7 @@ export default function EventForm({ initialData, onSuccess, onCancel }: EventFor
             )}
           />
           <FormField
-            control={form.control}
+            control={form.control as any}
             name="status"
             render={({ field }) => (
               <FormItem>
@@ -231,7 +234,7 @@ export default function EventForm({ initialData, onSuccess, onCancel }: EventFor
           />
         </div>
         <FormField
-          control={form.control}
+          control={form.control as any}
           name="capacity"
           render={({ field }) => (
             <FormItem>
@@ -245,7 +248,7 @@ export default function EventForm({ initialData, onSuccess, onCancel }: EventFor
         />
 
         <FormField
-          control={form.control}
+          control={form.control as any}
           name="cover_image_url"
           render={({ field }) => (
             <FormItem>

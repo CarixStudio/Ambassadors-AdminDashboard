@@ -1,7 +1,7 @@
 import * as React from "react";
 import { 
   Zap, 
-  PaperPlane, 
+  Send, 
   Bell, 
   Info, 
   Smartphone,
@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/src/lib/utils";
 
 export default function Broadcast() {

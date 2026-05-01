@@ -150,7 +150,7 @@ export default function EventRegistrations() {
             onChange={e => setSearch(e.target.value)}
           />
         </div>
-        <Select value={selectedEventId} onValueChange={setSelectedEventId}>
+        <Select value={selectedEventId} onValueChange={(val) => setSelectedEventId(val || 'all')}>
           <SelectTrigger className="w-full md:w-64 h-11 bg-card/50 border-none shadow-sm">
             <SelectValue placeholder="Filter by event" />
           </SelectTrigger>

@@ -8,7 +8,8 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
-  HeartHandshake
+  HeartHandshake,
+  RotateCw
 } from "lucide-react";
 import {
   Dialog,
@@ -43,6 +44,7 @@ export default function MemberAssignmentDialog({ member, open, onOpenChange, onS
   const [departments, setDepartments] = React.useState<any[]>([]);
   const [ministries, setMinistries] = React.useState<any[]>([]);
   const [positions, setPositions] = React.useState<any[]>([]);
+  const [userRoles, setUserRoles] = React.useState<any[]>([]);
   
   // Selection states
   const [selectedRole, setSelectedRole] = React.useState<string>("");
@@ -75,6 +77,7 @@ export default function MemberAssignmentDialog({ member, open, onOpenChange, onS
       setDepartments(dData || []);
       setMinistries(mData || []);
       setPositions(pData || []);
+      setUserRoles(urData || []);
 
       if (urData && urData.length > 0) {
         // Priority: super_admin > admin > pastor > leader > worker > member
@@ -115,7 +118,7 @@ export default function MemberAssignmentDialog({ member, open, onOpenChange, onS
         
         if (role) {
           // Check if user already has this role to avoid redundant upsert if it already exists
-          const alreadyHas = urData?.some(ur => ur.role_id === role.id);
+          const alreadyHas = userRoles?.some((ur: any) => ur.role_id === role.id);
           
           if (!alreadyHas) {
             const { error: roleErr } = await supabase.from('user_roles').upsert({ 
@@ -132,17 +135,17 @@ export default function MemberAssignmentDialog({ member, open, onOpenChange, onS
       if (selectedDept && selectedDept !== 'none') {
         const { data: existingWorker } = await supabase.from('church_workers').select('id').eq('user_id', member.id).maybeSingle();
         if (existingWorker) {
-          const { error: workerErr } = await supabase.from('church_workers').update({
+          const { error: workerErr } = await (supabase.from('church_workers') as any).update({
             department_id: selectedDept,
-            position_id: selectedPosition || null,
+            position_id: selectedPosition || undefined,
             status: 'active'
           }).eq('id', existingWorker.id);
           if (workerErr) throw workerErr;
         } else {
-          const { error: workerErr } = await supabase.from('church_workers').insert({
+          const { error: workerErr } = await (supabase.from('church_workers') as any).insert({
             user_id: member.id,
             department_id: selectedDept,
-            position_id: selectedPosition || null,
+            position_id: selectedPosition || undefined,
             status: 'active'
           });
           if (workerErr) throw workerErr;

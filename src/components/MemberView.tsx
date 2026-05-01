@@ -151,7 +151,7 @@ export default function MemberView({ member, onBack, canViewFinancials, canViewN
         .from('member_notes')
         .insert({
           member_id: member.id,
-          author_id: user?.id,
+          author_id: user!.id,
           note: newNote,
           category: 'Pastoral',
           is_confidential: true
@@ -191,7 +191,7 @@ export default function MemberView({ member, onBack, canViewFinancials, canViewN
         // Create new family group
         const { data: newGroup, error: groupError } = await supabase
           .from('family_groups')
-          .insert({ name: `${member.last_name} Family` })
+          .insert({ family_name: `${member.last_name} Family` })
           .select()
           .single();
         

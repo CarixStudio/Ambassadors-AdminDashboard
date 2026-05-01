@@ -9,7 +9,9 @@ import {
   Clock, 
   User,
   Share2,
-  Bookmark
+  Bookmark,
+  Send,
+  RotateCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

@@ -14,7 +14,8 @@ import {
   ChevronRight,
   Heart,
   Briefcase,
-  Trophy
+  Trophy,
+  RotateCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -97,8 +98,8 @@ export default function Milestones() {
             status,
             day,
             month,
-            email: p.email,
-            phone: p.phone
+            email: p.email || undefined,
+            phone: p.phone || undefined
           });
         }
         if (p.wedding_anniversary) {
@@ -120,8 +121,8 @@ export default function Milestones() {
             status,
             day,
             month,
-            email: p.email,
-            phone: p.phone
+            email: p.email || undefined,
+            phone: p.phone || undefined
           });
         }
       });
@@ -140,22 +141,22 @@ export default function Milestones() {
           const profile = m.profiles as any;
           
           let type: Milestone["type"] = "Other";
-          if (m.milestone_type === "job_promotion") type = "Job Promotion";
-          if (m.milestone_type === "celebration") type = "Celebration";
+          if (m.milestone === "job_promotion") type = "Job Promotion";
+          if (m.milestone === "celebration") type = "Celebration";
 
           list.push({
             id: m.id,
             name: `${profile?.first_name} ${profile?.last_name}`,
             type,
             date: d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
-            original_date: m.milestone_date,
+            original_date: m.milestone_date!,
             image: profile?.avatar_url,
             status,
             day,
             month,
-            email: profile?.email,
-            phone: profile?.phone,
-            description: m.description
+            email: profile?.email || undefined,
+            phone: profile?.phone || undefined,
+            description: m.description || undefined
           });
         }
       });
@@ -306,11 +307,10 @@ export default function Milestones() {
                               variant="ghost" 
                               size="icon" 
                               className="h-10 w-10 rounded-xl hover:bg-primary/10 hover:text-primary"
-                              asChild
+                              onClick={() => { if(item.phone) window.location.href = `tel:${item.phone}`; }}
+                              disabled={!item.phone}
                             >
-                              <a href={`tel:${item.phone}`} disabled={!item.phone}>
-                                <Phone className="w-4 h-4" />
-                              </a>
+                              <Phone className="w-4 h-4" />
                             </Button>
                           </div>
                           <Button className="rounded-xl h-10 px-4 font-bold uppercase tracking-widest text-[10px] gap-2 flex-1 sm:flex-none" onClick={() => toast.success(`Gift flow initiated for ${item.name}`)}>

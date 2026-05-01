@@ -17,14 +17,14 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
 const donationSchema = z.object({
-  amount: z.coerce.number().min(1, "Amount must be at least ₦1"),
+  amount: z.number().min(1, "Amount must be at least ₦1"),
   donation_type: z.enum(["tithe", "offering", "building_fund", "special", "welfare", "missions", "other"]),
   payment_channel: z.string().min(1, "Payment method is required"),
   donor_name: z.string().optional(),
   donor_email: z.string().optional(),
   donor_phone: z.string().optional(),
   notes: z.string().optional(),
-  status: z.enum(["completed", "pending", "failed"]),
+  status: z.enum(["pending", "completed", "failed", "refunded", "cancelled"]),
   is_anonymous: z.boolean().default(false),
   paystack_reference: z.string().optional(),
 });
@@ -50,7 +50,7 @@ export default function DonationForm({ onSuccess, onCancel }: DonationFormProps)
   const [loading, setLoading] = React.useState(false);
 
   const form = useForm<DonationFormValues>({
-    resolver: zodResolver(donationSchema),
+    resolver: zodResolver(donationSchema) as any,
     defaultValues: {
       amount: 0,
       donation_type: "tithe",
@@ -100,7 +100,7 @@ export default function DonationForm({ onSuccess, onCancel }: DonationFormProps)
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         {/* Amount */}
         <FormField
-          control={form.control}
+          control={form.control as any}
           name="amount"
           render={({ field }) => (
             <FormItem>
@@ -108,7 +108,14 @@ export default function DonationForm({ onSuccess, onCancel }: DonationFormProps)
               <FormControl>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-sm">₦</span>
-                  <Input type="number" step="1" className="pl-8" {...field} />
+                  <Input 
+                    type="number" 
+                    step="1" 
+                    className="pl-8" 
+                    {...field} 
+                    value={field.value || ""} 
+                    onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : 0)}
+                  />
                 </div>
               </FormControl>
               <FormMessage />
@@ -119,12 +126,12 @@ export default function DonationForm({ onSuccess, onCancel }: DonationFormProps)
         <div className="grid grid-cols-2 gap-4">
           {/* Fund Type */}
           <FormField
-            control={form.control}
+            control={form.control as any}
             name="donation_type"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Fund Type</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} defaultValue={field.value as string}>
                   <FormControl><SelectTrigger><SelectValue placeholder="Select fund" /></SelectTrigger></FormControl>
                   <SelectContent>
                     {Object.entries(FUND_LABELS).map(([val, label]) => (
@@ -139,12 +146,12 @@ export default function DonationForm({ onSuccess, onCancel }: DonationFormProps)
 
           {/* Payment Channel */}
           <FormField
-            control={form.control}
+            control={form.control as any}
             name="payment_channel"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Payment Method</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} defaultValue={field.value as string}>
                   <FormControl><SelectTrigger><SelectValue placeholder="Select method" /></SelectTrigger></FormControl>
                   <SelectContent>
                     <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
@@ -164,7 +171,7 @@ export default function DonationForm({ onSuccess, onCancel }: DonationFormProps)
 
         {/* Paystack Reference */}
         <FormField
-          control={form.control}
+          control={form.control as any}
           name="paystack_reference"
           render={({ field }) => (
             <FormItem>
@@ -180,7 +187,7 @@ export default function DonationForm({ onSuccess, onCancel }: DonationFormProps)
 
         {/* Anonymous toggle */}
         <FormField
-          control={form.control}
+          control={form.control as any}
           name="is_anonymous"
           render={({ field }) => (
             <FormItem className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
@@ -199,7 +206,7 @@ export default function DonationForm({ onSuccess, onCancel }: DonationFormProps)
         {!isAnon && (
           <div className="grid grid-cols-2 gap-4">
             <FormField
-              control={form.control}
+              control={form.control as any}
               name="donor_name"
               render={({ field }) => (
                 <FormItem>
@@ -210,7 +217,7 @@ export default function DonationForm({ onSuccess, onCancel }: DonationFormProps)
               )}
             />
             <FormField
-              control={form.control}
+              control={form.control as any}
               name="donor_phone"
               render={({ field }) => (
                 <FormItem>
@@ -225,17 +232,19 @@ export default function DonationForm({ onSuccess, onCancel }: DonationFormProps)
 
         {/* Status */}
         <FormField
-          control={form.control}
+          control={form.control as any}
           name="status"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Status</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} defaultValue={field.value as string}>
                 <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                 <SelectContent>
-                  <SelectItem value="completed">Completed ✅</SelectItem>
                   <SelectItem value="pending">Pending ⏳</SelectItem>
+                  <SelectItem value="completed">Completed ✅</SelectItem>
                   <SelectItem value="failed">Failed ❌</SelectItem>
+                  <SelectItem value="refunded">Refunded ↩️</SelectItem>
+                  <SelectItem value="cancelled">Cancelled 🚫</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -245,7 +254,7 @@ export default function DonationForm({ onSuccess, onCancel }: DonationFormProps)
 
         {/* Notes */}
         <FormField
-          control={form.control}
+          control={form.control as any}
           name="notes"
           render={({ field }) => (
             <FormItem>

@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-export type NotificationType = 'info' | 'success' | 'warning' | 'error';
+export type NotificationType = 'info' | 'reminder' | 'prayer' | 'event' | 'donation' | 'announcement' | 'system';
 
 export interface CreateNotificationParams {
   user_id: string;
@@ -54,11 +54,6 @@ export const notificationRepo = {
       
       // Wait, user_roles usually has role_id. 
       // Let's use a query that joins with roles.
-      const { data: adminUsers, error } = await supabase
-        .rpc('get_admin_user_ids'); // If we have an RPC, or just query:
-
-      // Since I don't know the exact schema of user_roles/roles join off-hand, 
-      // let's do a robust query.
       const { data: adminRoles } = await supabase.from('roles').select('id').in('name', ['admin', 'super_admin', 'pastor']);
       const roleIds = adminRoles?.map(r => r.id) || [];
       
@@ -74,7 +69,7 @@ export const notificationRepo = {
         user_id: uid,
         title,
         message,
-        type: 'info',
+        type: 'info' as NotificationType,
         metadata,
         is_read: false
       }));

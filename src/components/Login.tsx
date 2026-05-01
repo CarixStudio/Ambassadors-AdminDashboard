@@ -10,7 +10,7 @@ import { toast } from "sonner";
 
 export default function Login({ onLogin }: { onLogin: () => void }) {
   const [isLoading, setIsLoading] = React.useState(false);
-  const [mode] = React.useState<'login'>('login');
+  const [mode] = React.useState<'login' | 'signup'>('login');
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [firstName, setFirstName] = React.useState("");

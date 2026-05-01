@@ -139,7 +139,7 @@ export default function MasterRota() {
           />
         </div>
         <div className="flex items-center gap-2">
-          <Select value={filterDept} onValueChange={setFilterDept}>
+          <Select value={filterDept} onValueChange={(val) => setFilterDept(val || 'all')}>
             <SelectTrigger className="w-[180px] h-11 bg-card/50 border-none shadow-sm rounded-xl">
               <div className="flex items-center gap-2">
                 <Filter className="w-4 h-4" />

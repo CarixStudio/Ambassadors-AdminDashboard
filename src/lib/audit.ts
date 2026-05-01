@@ -22,12 +22,12 @@ export const auditRepo = {
       const { error } = await supabase
         .from('audit_log')
         .insert([{
-          admin_id: entry.admin_id,
+          actor_id: entry.admin_id,
           action: entry.action,
-          table_name: entry.table_name,
-          record_id: entry.record_id,
-          old_data: entry.old_values, // Matching the DB column name
-          new_data: entry.new_values, // Matching the DB column name
+          entity_type: entry.table_name,
+          entity_id: entry.record_id,
+          old_values: entry.old_values,
+          new_values: entry.new_values,
           ip_address: entry.ip_address,
           user_agent: entry.user_agent
         }]);

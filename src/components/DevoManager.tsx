@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Sun, Plus, Edit2, Trash2, Search, BookOpen, Calendar, CheckCircle2, Clock, Mail } from "lucide-react";
+import { Sun, Plus, Edit2, Trash2, Search, BookOpen, Calendar, CheckCircle2, Clock, Mail, Eye } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,19 @@ import { motion } from "motion/react";
 import { useAuth } from "@/src/contexts/AuthContext";
 import { ImageUpload } from "@/src/components/ui/ImageUpload";
 
-const EMPTY = { title: "", scripture_reference: "", scripture_text: "", reflection: "", prayer: "", confession: "", action_point: "", devotional_date: "", cover_image_url: "", status: "published", author_name: "" };
+const EMPTY = { 
+  title: "", 
+  scripture_reference: "", 
+  scripture_text: "", 
+  reflection: "", 
+  prayer: "", 
+  confession: "", 
+  action_point: "", 
+  devotional_date: "", 
+  cover_image_url: "", 
+  status: "published" as "draft" | "published" | "archived" | "scheduled", 
+  author_name: "" 
+};
 
 export default function DevoManager() {
   const { user } = useAuth();
@@ -187,7 +199,7 @@ export default function DevoManager() {
               </div>
               <div className="space-y-2">
                 <Label>Status</Label>
-                <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
+                <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v as any }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="published">Published</SelectItem>

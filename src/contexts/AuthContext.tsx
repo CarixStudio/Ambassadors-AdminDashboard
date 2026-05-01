@@ -21,6 +21,7 @@ const AuthContext = React.createContext<AuthContextType>({
   user: null,
   role: null,
   roles: [],
+  profile: null,
   permissions: {},
   loading: true,
   hasPermission: () => false,
@@ -54,13 +55,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   React.useEffect(() => {
     let mounted = true;
 
-    // Fallback timeout to ensure we never get stuck on loading
-    const timeoutId = setTimeout(() => {
-      if (mounted && loading) {
-        console.warn("Auth initialization timed out. Forcing load completion.");
-        setLoading(false);
-      }
-    }, 5000);
+    // High IQ: Forced auth resolution
 
     async function getInitialSession(retries = 3) {
       try {
@@ -84,8 +79,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } catch (error: any) {
         if (error?.message?.includes("Lock") && retries > 0) {
           console.warn(`Auth lock detected, retrying... (${retries} left)`);
-          setTimeout(() => getInitialSession(retries - 1), 500);
-          return;
+          return getInitialSession(retries - 1);
         }
         console.error("Error getting session:", error);
         if (mounted) setLoading(false);
@@ -113,7 +107,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     return () => {
       mounted = false;
-      clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
   }, []);
@@ -212,8 +205,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (err: any) {
       if (retries > 0) {
         console.warn(`[Auth] Role fetch failed, retrying... (${retries} left)`, err);
-        setTimeout(() => fetchRole(userId, retries - 1), 1000);
-        return;
+        return fetchRole(userId, retries - 1);
       }
       console.error('[Auth] Final role fetch failure, defaulting to member:', err);
       setRole('member');

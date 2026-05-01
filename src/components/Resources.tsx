@@ -89,7 +89,7 @@ export default function Resources() {
         .from('resources')
         .insert([{
           name: file.name,
-          url: publicUrl,
+          file_url: publicUrl,
           type: extension,
           category: extension === 'PDF' || extension === 'DOCX' ? 'Documents' : 
                     extension === 'MP4' || extension === 'MOV' ? 'Videos' :
@@ -111,9 +111,9 @@ export default function Resources() {
     }
   };
 
-  const handleDownload = async (url: string, fileName: string) => {
+  const handleDownload = async (file_url: string, fileName: string) => {
     try {
-      const response = await fetch(url);
+      const response = await fetch(file_url);
       const blob = await response.blob();
       const link = document.createElement('a');
       link.href = window.URL.createObjectURL(blob);
@@ -125,7 +125,7 @@ export default function Resources() {
     }
   };
 
-  const handleDelete = async (id: string, url: string) => {
+  const handleDelete = async (id: string, file_url: string) => {
     if (!confirm("Delete this resource permanently?")) return;
     
     try {
@@ -133,7 +133,7 @@ export default function Resources() {
       if (dbError) throw dbError;
       
       // Attempt to delete from storage as well
-      const path = url.split('/resources/')[1];
+      const path = file_url.split('/resources/')[1];
       if (path) {
         await supabase.storage.from('resources').remove([path]);
       }
@@ -329,22 +329,22 @@ export default function Resources() {
                     </div>
                   </div>
 
-                  <div className={cn(
-                    "flex items-center gap-2",
-                    view === "grid" ? "mt-6 pt-4 border-t border-border/50 justify-between" : "ml-4"
-                  )}>
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-primary/10 hover:text-primary" onClick={() => handleDownload(file.url, file.name)}>
-                        <Download className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-destructive/10 hover:text-destructive" onClick={() => handleDelete(file.id, file.url)}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                    <div className={cn(
+                      "flex items-center gap-2",
+                      view === "grid" ? "mt-6 pt-4 border-t border-border/50 justify-between" : "ml-4"
+                    )}>
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-primary/10 hover:text-primary" onClick={() => handleDownload(file.file_url || '', file.name)}>
+                          <Download className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-destructive/10 hover:text-destructive" onClick={() => handleDelete(file.id, file.file_url || '')}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <Badge variant="outline" className="bg-muted/50 border-none text-[8px] font-bold uppercase tracking-widest">
+                        {file.category}
+                      </Badge>
                     </div>
-                    <Badge variant="outline" className="bg-muted/50 border-none text-[8px] font-bold uppercase tracking-widest">
-                      {file.category}
-                    </Badge>
-                  </div>
                 </motion.div>
               );
             })}

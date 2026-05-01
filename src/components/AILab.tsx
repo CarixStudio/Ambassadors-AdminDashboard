@@ -10,7 +10,8 @@ import {
   MessageSquare,
   FileText,
   PenTool,
-  History
+  History,
+  Calendar
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,14 +26,14 @@ import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/src/lib/supabase";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const ai = new GoogleGenAI({ apiKey: (import.meta as any).env.VITE_GEMINI_API_KEY || '' });
 
 interface AIHistoryItem {
   id?: string;
   type: string;
   prompt: string;
   result: string;
-  created_at: string;
+  created_at: string | null;
 }
 
 export default function AILab() {
@@ -222,7 +223,7 @@ export default function AILab() {
                       <div key={item.id || i} className="p-3 rounded-xl bg-muted/30 border border-border/50 cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => setResult(item.result)}>
                         <div className="flex items-center justify-between mb-1">
                           <Badge variant="outline" className="text-[8px] font-bold uppercase">{item.type}</Badge>
-                          <span className="text-[8px] text-muted-foreground">{new Date(item.created_at).toLocaleTimeString()}</span>
+                          <span className="text-[8px] text-muted-foreground">{item.created_at ? new Date(item.created_at).toLocaleTimeString() : 'Recent'}</span>
                         </div>
                         <p className="text-[10px] font-medium line-clamp-1">{item.prompt}</p>
                       </div>

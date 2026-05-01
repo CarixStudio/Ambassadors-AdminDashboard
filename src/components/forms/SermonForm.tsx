@@ -21,9 +21,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/src/lib/supabase";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { ImageUpload } from "@/src/components/ui/ImageUpload";
 
 const sermonSchema = z.object({
@@ -37,7 +38,6 @@ const sermonSchema = z.object({
   sermon_date: z.string().min(1, "Sermon date is required"),
   status: z.enum(["published", "draft", "archived"]),
 });
-
 
 type SermonFormValues = z.infer<typeof sermonSchema>;
 
@@ -54,6 +54,26 @@ export default function SermonForm({ initialData, onSuccess, onCancel }: SermonF
   const [isSeriesDialogOpen, setIsSeriesDialogOpen] = React.useState(false);
   const [newSeriesTitle, setNewSeriesTitle] = React.useState("");
   const [creatingSeries, setCreatingSeries] = React.useState(false);
+
+  const form = useForm<SermonFormValues>({
+    resolver: zodResolver(sermonSchema),
+    defaultValues: initialData ? {
+      ...initialData,
+      speaker_name: initialData.sermon_speakers?.name || "",
+      sermon_date: initialData.sermon_date || new Date().toISOString().split('T')[0],
+      status: initialData.status || "published",
+    } : {
+      title: "",
+      description: "",
+      speaker_name: "",
+      series_id: "none",
+      video_url: "",
+      audio_url: "",
+      thumbnail_url: "",
+      sermon_date: new Date().toISOString().split('T')[0],
+      status: "published",
+    },
+  });
 
   const fetchSeries = async () => {
     const { data } = await supabase.from('sermon_series').select('id, title');
@@ -88,7 +108,7 @@ export default function SermonForm({ initialData, onSuccess, onCancel }: SermonF
     }
   };
 
-  async function onSubmit(values: any) {
+  async function onSubmit(values: SermonFormValues) {
     setLoading(true);
     try {
       // Handle speaker: find or create a speaker record, then use speaker_id
@@ -116,7 +136,12 @@ export default function SermonForm({ initialData, onSuccess, onCancel }: SermonF
       // Build the payload without speaker_name (not a DB column)
       const { speaker_name, ...rest } = values;
       const slug = values.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-      const payload = { ...rest, speaker_id, slug };
+      const payload = { 
+        ...rest, 
+        speaker_id, 
+        slug,
+        series_id: values.series_id === "none" ? null : values.series_id 
+      };
 
       if (initialData?.id) {
         const { error } = await supabase
@@ -294,7 +319,7 @@ export default function SermonForm({ initialData, onSuccess, onCancel }: SermonF
             <FormItem>
               <ImageUpload
                 label="Sermon Thumbnail"
-                hint="Recommended: 16:9 ratio (1280\u00d7720). Shown as the sermon card preview image."
+                hint="Recommended: 16:9 ratio (1280×720). Shown as the sermon card preview image."
                 value={field.value}
                 onChange={field.onChange}
                 folder="ambassadors_assembly/sermons"
@@ -349,6 +374,3 @@ export default function SermonForm({ initialData, onSuccess, onCancel }: SermonF
   );
 }
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus } from "lucide-react";
-}

@@ -21,7 +21,8 @@ import {
   ShieldCheck,
   ShieldX,
   Clock,
-  BadgeCheck
+  BadgeCheck,
+  ExternalLink
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

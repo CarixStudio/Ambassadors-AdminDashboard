@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Radio, Youtube, Play, StopCircle, Clock, Eye, Plus, Edit2, Trash2, Globe, VideoIcon, MoreVertical, Wifi, WifiOff, Calendar, CheckCircle2, AlertCircle, HeartHandshake, ExternalLink } from "lucide-react";
+import { Radio, Youtube, Play, StopCircle, Clock, Eye, Plus, Edit2, Trash2, Globe, VideoIcon, MoreVertical, Wifi, WifiOff, Calendar, CheckCircle2, AlertCircle, HeartHandshake, ExternalLink, RotateCw, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Textarea } from "@/components/ui/textarea";
 import { ImageUpload } from "@/src/components/ui/ImageUpload";
 import { supabase } from "@/src/lib/supabase";
+import { useAuth } from "@/src/contexts/AuthContext";
 import { toast } from "sonner";
 import { motion } from "motion/react";
 
@@ -35,6 +36,7 @@ interface StreamForm {
 }
 
 export default function LiveStreamManager() {
+  const { user } = useAuth();
   const [streams, setStreams] = React.useState<any[]>([]);
   const [speakers, setSpeakers] = React.useState<any[]>([]);
   const [series, setSeries] = React.useState<any[]>([]);
@@ -173,13 +175,14 @@ export default function LiveStreamManager() {
     if (!form.title || !form.scheduled_start) { toast.error("Title and start time are required."); return; }
     const payload = { 
       ...form, 
+      user_id: user?.id,
       scheduled_start: new Date(form.scheduled_start).toISOString(), 
       scheduled_end: form.scheduled_end ? new Date(form.scheduled_end).toISOString() : null,
       actual_start: form.status === "live" ? new Date().toISOString() : null
     };
     const { error } = editingStream
-      ? await supabase.from("live_streams").update(payload).eq("id", editingStream.id)
-      : await supabase.from("live_streams").insert(payload);
+      ? await supabase.from("live_streams").update(payload as any).eq("id", editingStream.id)
+      : await supabase.from("live_streams").insert(payload as any);
     if (error) { toast.error(error.message); return; }
     toast.success(editingStream ? "Stream updated!" : form.status === "live" ? "🔴 Broadcasting started!" : "Stream scheduled!");
     setIsFormOpen(false);
@@ -394,7 +397,7 @@ export default function LiveStreamManager() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Platform</Label>
-                <Select value={form.platform} onValueChange={v => setForm(f => ({ ...f, platform: v ?? 'youtube' }))}>
+                <Select value={form.platform} onValueChange={v => setForm(f => ({ ...f, platform: v as any }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="youtube">YouTube</SelectItem>

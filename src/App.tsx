@@ -41,6 +41,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { Loader2, Shield } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { supabase } from "./lib/supabase";
+import { Button } from "@/components/ui/button";
 
 function AppContent() {
   const { session, loading } = useAuth();
