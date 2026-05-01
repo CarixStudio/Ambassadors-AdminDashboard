@@ -43,18 +43,13 @@ export const notificationRepo = {
    */
   notifyAdmins: async (title: string, message: string, metadata?: any) => {
     try {
-      // 1. Get all admin user IDs
-      const { data: admins, error: adminError } = await supabase
-        .from('user_roles')
-        .select('user_id')
-        .in('role_id', [
-          // We need the role IDs or names. Names are safer if we join.
-          'admin', 'super_admin', 'pastor'
-        ]);
+      // 1. Get all admin user IDs by joining with roles table
+      const { data: adminRoles, error: roleError } = await supabase
+        .from('roles')
+        .select('id')
+        .in('name', ['admin', 'super_admin', 'pastor']);
       
-      // Wait, user_roles usually has role_id. 
-      // Let's use a query that joins with roles.
-      const { data: adminRoles } = await supabase.from('roles').select('id').in('name', ['admin', 'super_admin', 'pastor']);
+      if (roleError) throw roleError;
       const roleIds = adminRoles?.map(r => r.id) || [];
       
       if (roleIds.length === 0) return false;

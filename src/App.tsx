@@ -46,7 +46,31 @@ import { Button } from "@/components/ui/button";
 
 function AppContent() {
   const { session, loading } = useAuth();
-  const [activeTab, setActiveTab] = React.useState("dashboard");
+  const [activeTab, setActiveTab] = React.useState(() => {
+    // Initialize from URL path
+    const path = window.location.pathname.substring(1) || "dashboard";
+    return path;
+  });
+
+  // Sync state with URL
+  React.useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname.substring(1) || "dashboard";
+      setActiveTab(path);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  // Sync URL with state
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    const newPath = tab === "dashboard" ? "/" : `/${tab}`;
+    if (window.location.pathname !== newPath) {
+      window.history.pushState({ tab }, "", newPath);
+    }
+  };
 
   if (loading) {
     return (
@@ -178,11 +202,11 @@ function AppContent() {
   const renderContent = () => {
     switch (activeTab) {
       case "dashboard":
-        return <Dashboard onTabChange={setActiveTab} />;
+        return <Dashboard onTabChange={handleTabChange} />;
       case "members":
-        return <MembersList onTabChange={setActiveTab} />;
+        return <MembersList onTabChange={handleTabChange} />;
       case "sermons":
-        return <Sermons onTabChange={setActiveTab} />;
+        return <Sermons onTabChange={handleTabChange} />;
       case "profile":
         return <ProfileSettings />;
       case "admin":
@@ -196,9 +220,9 @@ function AppContent() {
       case "admin-audit":
         return <AdminControls defaultTab="audit" />;
       case "ministries":
-        return <Ministries onTabChange={setActiveTab} />;
+        return <Ministries onTabChange={handleTabChange} />;
       case "departments":
-        return <Departments onTabChange={setActiveTab} />;
+        return <Departments onTabChange={handleTabChange} />;
       case "donations":
         return <Finance />;
       case "prayers":
@@ -226,7 +250,7 @@ function AppContent() {
       case "reports":
         return <Reports />;
       case "volunteers":
-        return <Volunteers onTabChange={setActiveTab} />;
+        return <Volunteers onTabChange={handleTabChange} />;
       case "master-rota":
         return <MasterRota />;
       case "live-stream":

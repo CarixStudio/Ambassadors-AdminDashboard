@@ -22,7 +22,7 @@ export const auditRepo = {
       const { error } = await supabase
         .from('audit_log')
         .insert([{
-          actor_id: entry.admin_id,
+          actor_id: entry.admin_id && entry.admin_id !== 'unknown' ? entry.admin_id : null,
           action: entry.action,
           entity_type: entry.table_name,
           entity_id: entry.record_id,

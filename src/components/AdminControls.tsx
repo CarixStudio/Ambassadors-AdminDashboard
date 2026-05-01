@@ -61,7 +61,17 @@ export default function AdminControls({ defaultTab = "general" }: { defaultTab?:
   const [settings, setSettings] = React.useState<Settings>({});
   const [auditLogs, setAuditLogs] = React.useState<any[]>([]);
   const [roles, setRoles] = React.useState<any[]>([]);
-  const [activeTab, setActiveTab] = React.useState(defaultTab);
+  const [activeTab, setActiveTabState] = React.useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("tab") || defaultTab;
+  });
+
+  const setActiveTab = (tab: string) => {
+    setActiveTabState(tab);
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", tab);
+    window.history.replaceState({}, "", url.toString());
+  };
 
   if (!authLoading && role !== 'admin' && role !== 'super_admin' && role !== 'pastor') {
     return (
@@ -152,10 +162,7 @@ export default function AdminControls({ defaultTab = "general" }: { defaultTab?:
         }, { onConflict: 'key' })
       );
       
-      const results = await Promise.race([
-        Promise.all(updates),
-        new Promise((_, reject) => setTimeout(() => reject(new Error("Save timeout")), 10000))
-      ]) as any[];
+      const results = await Promise.all(updates);
 
       const errors = results.filter(r => r.error);
       if (errors.length > 0) {

@@ -26,7 +26,8 @@ import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/src/lib/supabase";
 
-const ai = new GoogleGenAI({ apiKey: (import.meta as any).env.VITE_GEMINI_API_KEY || '' });
+const GEMINI_API_KEY = (import.meta as any).env.VITE_GEMINI_API_KEY || '';
+const ai = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null;
 
 interface AIHistoryItem {
   id?: string;
@@ -65,6 +66,12 @@ export default function AILab() {
   const generateContent = async (type: string) => {
     if (!prompt && type === "custom") {
       toast.error("Please enter a prompt");
+      return;
+    }
+
+    if (!ai) {
+      toast.error("Gemini API key is not configured");
+      setLoading(false);
       return;
     }
 
