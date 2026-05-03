@@ -90,7 +90,7 @@ export default function MemberView({ member, onBack, canViewFinancials, canViewN
         promises.push(
           supabase
             .from('member_notes')
-            .select('*, author:author_id(first_name, last_name)')
+            .select('*, author:profiles!member_notes_author_id_fkey(first_name, last_name)')
             .eq('member_id', member.id)
             .order('created_at', { ascending: false })
             .then(({ data }) => setNotes(data || []))
@@ -119,7 +119,7 @@ export default function MemberView({ member, onBack, canViewFinancials, canViewN
               const familyIds = links.map(l => l.family_id);
               const { data: members } = await supabase
                 .from('family_members')
-                .select('*, profile:user_id(first_name, last_name, avatar_url)')
+                .select('*, profile:profiles!family_members_user_id_fkey(first_name, last_name, avatar_url)')
                 .in('family_id', familyIds);
               setFamily(members || []);
             } else {

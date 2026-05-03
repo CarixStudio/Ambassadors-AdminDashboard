@@ -68,14 +68,17 @@ export default function Ministries({ type = "ministry", onTabChange }: Ministrie
     setLoading(true);
     try {
       const targetTable = isDepartment ? 'church_departments' : 'ministries';
+      const leaderCol = isDepartment ? 'head_id' : 'leader_id';
+      const coLeaderCol = isDepartment ? 'deputy_head_id' : 'co_leader_id';
+      
       let query = supabase
         .from(targetTable)
         .select(`
           *,
-          leader:profiles!leader_id (
+          leader:profiles!${leaderCol} (
             id, first_name, last_name, avatar_url, email
           ),
-          co_leader:profiles!co_leader_id (
+          co_leader:profiles!${coLeaderCol} (
             id, first_name, last_name, avatar_url
           ),
           ${isDepartment ? 'workers:church_workers(count)' : 'members:ministry_members(count)'}
