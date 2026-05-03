@@ -216,15 +216,9 @@ export default function ApprovalsCenter() {
       if ((type === 'staff' || type === 'volunteers') && action === 'approve') {
         if (type === 'staff') {
           const targetRole = record._selectedRole || 'worker';
-          const roleId = roles.find(r => r.name === targetRole)?.id;
           
-          if (roleId) {
-            await supabase.from('user_roles').upsert({ 
-              user_id: id, 
-              role_id: roleId,
-              is_active: true
-            }, { onConflict: 'user_id' });
-          }
+          // Single source of truth: update role_claim on profiles
+          await supabase.from('profiles').update({ role_claim: targetRole }).eq('id', id);
 
           if (record.department_claim) {
             const matchedDept = departments.find(d => 

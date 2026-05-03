@@ -164,21 +164,21 @@ function AppContent() {
   }
 
   // ==========================================
-  // RBAC GATEKEEPER (High IQ Security)
+  // RBAC GATEKEEPER (Simplified)
   // ==========================================
   const { role, isRoleResolving } = useAuth();
   
-  // High IQ: If we are still resolving roles, don't kick them out yet
-  if (isRoleResolving) {
+  // Still fetching role — show nothing extra, the main preloader handles it
+  if (isRoleResolving || role === null) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#010101] p-6 text-center">
         <Loader2 className="w-8 h-8 text-primary animate-spin mb-4" />
-        <p className="text-white font-bold uppercase tracking-widest text-[10px]">Resolving Identity...</p>
+        <p className="text-white/50 font-bold uppercase tracking-widest text-[10px]">Loading Dashboard...</p>
       </div>
     );
   }
 
-  const isAuthorized = role && ['super_admin', 'admin', 'pastor', 'leader'].includes(role);
+  const isAuthorized = ['super_admin', 'admin', 'pastor', 'leader'].includes(role);
 
   if (!isAuthorized) {
     return (

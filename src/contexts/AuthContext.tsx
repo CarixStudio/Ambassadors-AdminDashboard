@@ -8,9 +8,7 @@ interface AuthContextType {
   session: Session | null;
   user: User | null;
   role: Role | null;
-  roles: Role[];
   profile: any | null;
-  permissions: Record<string, boolean>;
   loading: boolean;
   isRoleResolving: boolean;
   hasPermission: (permission: string) => boolean;
@@ -21,11 +19,9 @@ const AuthContext = React.createContext<AuthContextType>({
   session: null,
   user: null,
   role: null,
-  roles: [],
   profile: null,
-  permissions: {},
   loading: true,
-  isRoleResolving: true,
+  isRoleResolving: false,
   hasPermission: () => false,
   refreshProfile: async () => {},
 });
@@ -34,216 +30,117 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = React.useState<Session | null>(null);
   const [user, setUser] = React.useState<User | null>(null);
   const [role, setRole] = React.useState<Role | null>(null);
-  const [roles, setRoles] = React.useState<Role[]>([]);
   const [profile, setProfile] = React.useState<any | null>(null);
-  const [permissions, setPermissions] = React.useState<Record<string, boolean>>({});
   const [loading, setLoading] = React.useState(true);
-  const [isRoleResolving, setIsRoleResolving] = React.useState(true);
+  const [isRoleResolving, setIsRoleResolving] = React.useState(false);
 
-  const refreshProfile = async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .maybeSingle();
-    
-    // High IQ: Merge DB profile with Auth metadata (e.g. Google avatar)
-    if (data) {
-      setProfile({
-        ...data,
-        avatar_url: data.avatar_url || user.user_metadata?.avatar_url || user.user_metadata?.picture,
-        full_name: data.full_name || user.user_metadata?.full_name || `${data.first_name} ${data.last_name}`
-      });
-    } else if (user.user_metadata) {
-      // Fallback for brand new users without a DB profile yet
-      setProfile({
-        id: user.id,
-        email: user.email,
-        avatar_url: user.user_metadata.avatar_url || user.user_metadata.picture,
-        full_name: user.user_metadata.full_name
-      });
+  const fetchProfileAndRole = async (userId: string, authUser: User) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (error) {
+        console.error('[Auth] Profile fetch error:', error.message);
+        setRole('member');
+        return;
+      }
+
+      if (data) {
+        // Set profile with avatar fallback
+        setProfile({
+          ...data,
+          avatar_url: data.avatar_url || authUser.user_metadata?.avatar_url || authUser.user_metadata?.picture,
+          full_name: data.full_name || authUser.user_metadata?.full_name || `${data.first_name || ''} ${data.last_name || ''}`.trim()
+        });
+
+        // Simple: role_claim is the single source of truth
+        const userRole = (data.role_claim || 'member').toLowerCase().trim().replace(/\s+/g, '_') as Role;
+        console.log(`[Auth] Role resolved: ${userRole}`);
+        setRole(userRole);
+      } else {
+        // Brand new user with no profile row yet
+        setProfile({
+          id: authUser.id,
+          email: authUser.email,
+          avatar_url: authUser.user_metadata?.avatar_url || authUser.user_metadata?.picture,
+          full_name: authUser.user_metadata?.full_name
+        });
+        setRole('member');
+        console.log('[Auth] No profile found, defaulting to member.');
+      }
+    } catch (err) {
+      console.error('[Auth] Unexpected error during profile fetch:', err);
+      setRole('member');
     }
   };
 
+  const refreshProfile = async () => {
+    if (!user) return;
+    await fetchProfileAndRole(user.id, user);
+  };
+
   const hasPermission = (permission: string) => {
-    if (role === 'super_admin' || permissions['all']) return true;
-    return !!permissions[permission];
+    if (role === 'super_admin') return true;
+    if (role === 'admin') return true;
+    return false;
   };
 
   React.useEffect(() => {
     let mounted = true;
 
-    // High IQ Safety: If auth doesn't resolve within 15s, force loading to false to prevent infinite preloader
-    const safetyTimeout = setTimeout(() => {
-      if (loading && mounted) {
-        console.warn('[Auth] Safety timeout triggered. Forcing preloader to resolve.');
-        setLoading(false);
-      }
-    }, 15000);
-
-    // High IQ: Use onAuthStateChange as the single source of truth for session and role resolution.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log(`[Auth] State Change: ${event}`);
+    const initAuth = async () => {
+      // 1. Get the current session
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
       
-      if (mounted) {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        // High IQ: If we have a session, we are no longer "loading" the auth state
-        setLoading(false);
+      if (!mounted) return;
 
-        if (session?.user) {
-          setIsRoleResolving(true);
-          await Promise.all([
-            fetchRole(session.user.id),
-            refreshProfile()
-          ]);
-          setIsRoleResolving(false);
-        } else {
-          setRole(null);
-          setRoles([]);
-          setPermissions({});
-          setIsRoleResolving(false);
-        }
-        
-        clearTimeout(safetyTimeout);
+      if (currentSession?.user) {
+        setSession(currentSession);
+        setUser(currentSession.user);
+        setIsRoleResolving(true);
+        await fetchProfileAndRole(currentSession.user.id, currentSession.user);
+        if (mounted) setIsRoleResolving(false);
+      }
+
+      if (mounted) setLoading(false);
+    };
+
+    initAuth();
+
+    // 2. Listen for future auth changes (login, logout, token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      console.log(`[Auth] State Change: ${event}`);
+      if (!mounted) return;
+
+      // Skip token refreshes — we already have the session
+      if (event === 'TOKEN_REFRESHED') return;
+
+      setSession(newSession);
+      setUser(newSession?.user ?? null);
+
+      if (newSession?.user) {
+        setIsRoleResolving(true);
+        await fetchProfileAndRole(newSession.user.id, newSession.user);
+        if (mounted) setIsRoleResolving(false);
+      } else {
+        // Signed out
+        setRole(null);
+        setProfile(null);
+        setIsRoleResolving(false);
       }
     });
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
-      clearTimeout(safetyTimeout);
     };
   }, []);
 
-  const fetchRole = async (userId: string, retries = 2) => {
-    // High IQ: Guard against redundant calls while loading
-    if (loading && role && user?.id === userId) return;
-    
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s safety timeout
-
-    try {
-      // Don't set global loading here, let isRoleResolving handle it
-      console.log(`[Auth] Resolving role for user: ${userId}`);
-
-      // 1. High IQ: Fetch all active roles and prioritize the most powerful one
-      const { data: dbData, error: dbError } = await supabase
-        .from('user_roles')
-        .select(`
-          is_active,
-          roles (
-            name,
-            permissions
-          )
-        `)
-        .eq('user_id', userId)
-        .eq('is_active', true)
-        .abortSignal(controller.signal);
-
-      if (dbError) {
-        console.warn('[Auth] Database role fetch error:', dbError);
-      }
-
-      if (dbData && dbData.length > 0) {
-        const roleRanking: Record<string, number> = {
-          'super_admin': 100,
-          'admin': 80,
-          'superadmin': 99,
-          'super_admin_role': 98,
-          'pastor': 70,
-          'leader': 50,
-          'worker': 30,
-          'member': 10,
-          'guest': 0
-        };
-
-        const sortedRoles = dbData
-          .map((ur: any) => ({
-            name: (ur.roles?.name || '').toLowerCase().trim().replace(/\s+/g, '_'),
-            permissions: ur.roles?.permissions || {}
-          }))
-          .sort((a, b) => (roleRanking[b.name] || 0) - (roleRanking[a.name] || 0));
-
-        const highestRole = sortedRoles[0];
-        
-        console.log(`[Auth] Role resolved from DB (Priority: ${highestRole.name})`);
-        setRole(highestRole.name as Role);
-        setRoles(sortedRoles.map(r => r.name as Role));
-        
-        const mergedPermissions = sortedRoles.reduce((acc, curr) => ({
-          ...acc,
-          ...curr.permissions
-        }), {});
-        
-        setPermissions(mergedPermissions);
-        setLoading(false);
-        clearTimeout(timeoutId);
-        return; 
-      }
-
-      // 2. Fallback: Check app_metadata
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      const metadataRole = authUser?.app_metadata?.role;
-      
-      if (metadataRole) {
-        const formattedRole = metadataRole.toLowerCase().replace(/\s+/g, '_') as Role;
-        console.log(`[Auth] Role resolved from Metadata: ${formattedRole}`);
-        setRole(formattedRole);
-        setRoles([formattedRole]);
-        setLoading(false);
-        clearTimeout(timeoutId);
-        return;
-      }
-
-      // 3. Last Resort Fallback: Check profiles table
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('role_claim')
-        .eq('id', userId)
-        .maybeSingle();
-      
-      if (profileData?.role_claim) {
-        const formattedRole = profileData.role_claim.toLowerCase().trim().replace(/\s+/g, '_') as Role;
-        console.log(`[Auth] Role resolved from Profile Claim: ${formattedRole}`);
-        setRole(formattedRole);
-        setRoles([formattedRole]);
-      } else {
-        console.log(`[Auth] No specific role found, defaulting to member`);
-        setRole("member");
-        setRoles(["member"]);
-      }
-      setPermissions({});
-
-    } catch (err: any) {
-      if (err.name === 'AbortError') {
-        console.error('[Auth] Role resolution timed out after 10s. Defaulting to member for safety.');
-      } else if (retries > 0) {
-        console.warn(`[Auth] Role fetch failed, retrying... (${retries} left)`, err);
-        return fetchRole(userId, retries - 1);
-      } else {
-        console.error('[Auth] Final role fetch failure:', err);
-      }
-      
-      // Safety Fallback: Use existing role if we have one, otherwise member
-      if (!role) {
-        setRole('member');
-        setRoles(['member']);
-      }
-    } finally {
-      // High IQ: Always ensure loading is false after a resolution attempt
-      if (mounted) {
-        setLoading(false);
-      }
-      clearTimeout(timeoutId);
-    }
-  };
-
-
   return (
-    <AuthContext.Provider value={{ session, user, role, roles, profile, permissions, loading, isRoleResolving, hasPermission, refreshProfile }}>
+    <AuthContext.Provider value={{ session, user, role, profile, loading, isRoleResolving, hasPermission, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

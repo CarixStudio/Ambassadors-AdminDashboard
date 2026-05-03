@@ -254,21 +254,9 @@ export default function AdminControls({ defaultTab = "general" }: { defaultTab?:
   const assignRole = async (userId: string) => {
     setAssigningId(userId);
     try {
-      // 1. Get role ID
-      const { data: roleData } = await supabase.from('roles').select('id').eq('name', selectedRole).single();
-      if (!roleData) throw new Error("Role not found");
-
-      // 2. Upsert user_roles
-      const { error } = await supabase.from('user_roles').upsert({
-        user_id: userId,
-        role_id: roleData.id,
-        is_active: true
-      }, { onConflict: 'user_id' });
-
+      // Single source of truth: update role_claim on profiles
+      const { error } = await supabase.from('profiles').update({ role_claim: selectedRole }).eq('id', userId);
       if (error) throw error;
-
-      // 3. Update profile role_claim (fallback)
-      await supabase.from('profiles').update({ role_claim: selectedRole }).eq('id', userId);
 
       toast.success(`Role '${selectedRole}' assigned successfully!`);
       setFoundUsers([]);
@@ -277,9 +265,9 @@ export default function AdminControls({ defaultTab = "general" }: { defaultTab?:
       await auditRepo.logAction({
         admin_id: user?.id || 'unknown',
         action: 'UPDATE',
-        table_name: 'user_roles',
+        table_name: 'profiles',
         record_id: userId,
-        new_values: { role: selectedRole }
+        new_values: { role_claim: selectedRole }
       });
 
     } catch (err: any) {

@@ -60,7 +60,7 @@ export default function MemberAssignmentDialog({ member, open, onOpenChange, onS
         { data: dData },
         { data: mData },
         { data: pData },
-        { data: urData },
+        { data: profileData },
         { data: cwData },
         { data: mmData }
       ] = await Promise.all([
@@ -68,7 +68,7 @@ export default function MemberAssignmentDialog({ member, open, onOpenChange, onS
         supabase.from('church_departments').select('id, name'),
         supabase.from('ministries').select('id, name'),
         supabase.from('church_positions').select('id, title, department_id'),
-        supabase.from('user_roles').select('role_id').eq('user_id', member.id),
+        supabase.from('profiles').select('role_claim').eq('id', member.id).single(),
         supabase.from('church_workers').select('department_id, position_id').eq('user_id', member.id).maybeSingle(),
         supabase.from('ministry_members').select('ministry_id').eq('user_id', member.id).maybeSingle()
       ]);
@@ -77,15 +77,10 @@ export default function MemberAssignmentDialog({ member, open, onOpenChange, onS
       setDepartments(dData || []);
       setMinistries(mData || []);
       setPositions(pData || []);
-      setUserRoles(urData || []);
 
-      if (urData && urData.length > 0) {
-        // Priority: super_admin > admin > pastor > leader > worker > member
-        const roleRanking = ['super_admin', 'admin', 'pastor', 'leader', 'worker', 'member'];
-        const userRoleNames = urData.map(ur => rData?.find(r => r.id === ur.role_id)?.name).filter(Boolean);
-        
-        const bestRole = roleRanking.find(rn => userRoleNames.includes(rn));
-        if (bestRole) setSelectedRole(bestRole);
+      // Read role directly from profile
+      if (profileData?.role_claim) {
+        setSelectedRole(profileData.role_claim);
       }
       if (cwData) {
         setSelectedDept(cwData.department_id || "");
@@ -111,24 +106,12 @@ export default function MemberAssignmentDialog({ member, open, onOpenChange, onS
   const handleSave = async () => {
     setLoading(true);
     try {
-      // 1. Handle Role Update (High IQ Upsert)
+      // 1. Handle Role Update — single source of truth on profiles
       if (selectedRole) {
-        const normalizedSelected = selectedRole.toLowerCase().replace(/\s+/g, '_');
-        const role = roles.find(r => r.name.toLowerCase().replace(/\s+/g, '_') === normalizedSelected);
-        
-        if (role) {
-          // Check if user already has this role to avoid redundant upsert if it already exists
-          const alreadyHas = userRoles?.some((ur: any) => ur.role_id === role.id);
-          
-          if (!alreadyHas) {
-            const { error: roleErr } = await supabase.from('user_roles').upsert({ 
-              user_id: member.id, 
-              role_id: role.id,
-              is_active: true
-            }, { onConflict: 'user_id, role_id' });
-            if (roleErr) throw roleErr;
-          }
-        }
+        const { error: roleErr } = await supabase.from('profiles')
+          .update({ role_claim: selectedRole })
+          .eq('id', member.id);
+        if (roleErr) throw roleErr;
       }
 
       // 2. Handle Department/Position Update
