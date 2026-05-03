@@ -140,7 +140,10 @@ export default function Dashboard({ onTabChange }: DashboardProps) {
 
   React.useEffect(() => {
     async function fetchDashboardData(retries = 3) {
-      if (!user) return;
+      if (!user) {
+        setLoading(false); // High IQ: Ensure we stop loading even if no user yet
+        return;
+      }
       
       try {
         // Fetch profile for personalized greeting
@@ -164,7 +167,7 @@ export default function Dashboard({ onTabChange }: DashboardProps) {
           supabase.from('ministries').select('*', { count: 'exact', head: true }),
           supabase.from('church_departments').select('*', { count: 'exact', head: true }),
           supabase.from('attendance_records').select('*', { count: 'exact', head: true }),
-          supabase.from('events').select('*, event_registrations(count)').gte('start_date', new Date().toISOString().split('T')[0]).order('start_date', { ascending: true }).limit(3)
+          supabase.from('events').select('*, event_registrations!event_registrations_event_id_fkey(count)').gte('start_date', new Date().toISOString().split('T')[0]).order('start_date', { ascending: true }).limit(3)
         ]);
 
         const totalGiving = givingData?.reduce((acc, curr) => acc + (curr.amount || 0), 0) || 0;
@@ -489,8 +492,8 @@ export default function Dashboard({ onTabChange }: DashboardProps) {
           </CardHeader>
           <CardContent className="pl-2">
             <div className="h-[350px] w-full min-h-[350px] relative">
-              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                <AreaChart data={chartData.length > 0 ? chartData : chartData}>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData.length > 0 ? chartData : []}>
                   <defs>
                     <linearGradient id="colorAttendance" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
@@ -604,7 +607,7 @@ export default function Dashboard({ onTabChange }: DashboardProps) {
           </CardHeader>
           <CardContent className="flex justify-center min-h-[200px] relative">
             <div className="h-[200px] w-full">
-              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+              <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={ministryDistribution}

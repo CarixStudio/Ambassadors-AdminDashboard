@@ -82,7 +82,7 @@ export default function MasterRota() {
           .order('schedule_date', { ascending: true }),
         supabase
           .from('church_workers')
-          .select('*, profiles(first_name, last_name, avatar_url)'),
+          .select('*, profiles!church_workers_user_id_fkey(first_name, last_name, avatar_url)'),
         supabase
           .from('church_departments')
           .select('id, name')

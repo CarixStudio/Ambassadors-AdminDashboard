@@ -210,7 +210,7 @@ export default function MembersList({ onTabChange }: { onTabChange?: (tab: strin
         .from('member_notes')
         .select(`
           *,
-          author:author_id (
+          author:profiles!member_notes_author_id_fkey (
             first_name,
             last_name
           )

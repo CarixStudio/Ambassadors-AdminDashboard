@@ -142,10 +142,10 @@ export default function ApprovalsCenter() {
       ] = await Promise.all([
         supabase.from('profiles').select('*').eq('already_serving', true).eq('approval_status', 'pending'),
         supabase.from('volunteer_applications').select('*, church_departments(name), church_positions(title)').eq('status', 'pending'),
-        supabase.from('ministry_members').select('*, ministries(name), profiles:user_id(first_name, last_name, email, avatar_url)').eq('role', 'pending'),
+        supabase.from('ministry_members').select('*, ministries(name), profiles:profiles!ministry_members_user_id_fkey(first_name, last_name, email, avatar_url)').eq('role', 'pending'),
         supabase.from('testimonies').select('*').eq('is_approved', false),
         supabase.from('prayer_requests').select('id, title, description, requester_name, requester_email, created_at, is_urgent, category, recaptcha_score, is_public').eq('is_approved', false).is('approved_at', null),
-        supabase.from('event_registrations').select('*, events!inner(*), profiles:user_id(*)').eq('is_confirmed', false).eq('events.event_type', 'outreach'),
+        supabase.from('event_registrations').select('*, events!inner(*), profiles:profiles!event_registrations_user_id_fkey(*)').eq('is_confirmed', false).eq('events.event_type', 'outreach'),
         supabase.from('roles').select('id, name'),
         supabase.from('church_departments').select('id, name')
       ]);

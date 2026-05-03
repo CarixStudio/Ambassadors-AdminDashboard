@@ -67,7 +67,7 @@ export default function Milestones() {
       // 2. Fetch Member Milestones (for Job Promotions etc)
       const { data: customMilestones, error: mError } = await supabase
         .from('member_milestones')
-        .select('*, profiles(first_name, last_name, avatar_url, email, phone)');
+        .select('*, profiles!member_milestones_user_id_fkey(first_name, last_name, avatar_url, email, phone)');
 
       if (mError) throw mError;
 

@@ -102,7 +102,7 @@ export default function Attendance() {
       
       const { data, error } = await supabase
         .from('attendance_records')
-        .select('user_id, profiles(first_name, last_name)')
+        .select('user_id, profiles!attendance_records_user_id_fkey(first_name, last_name)')
         .eq('attendance', 'in_person')
         .gte('service_date', firstDayOfMonth);
         

@@ -142,7 +142,7 @@ export default function Tasks() {
         .from('church_workers')
         .select(`
           *,
-          profiles (
+          profiles!church_workers_user_id_fkey (
             first_name,
             last_name,
             avatar_url
