@@ -113,8 +113,8 @@ export default function Departments({ onTabChange }: { onTabChange?: (tab: strin
     }
   };
 
-  const fetchPositions = async () => {
-    const { data } = await supabase.from('church_positions').select('id, title, is_leadership');
+  const fetchPositions = async (deptId: string) => {
+    const { data } = await supabase.from('church_positions').select('id, title, is_leadership').eq('department_id', deptId).order('sort_order', { ascending: true });
     setPositions(data || []);
   };
 
@@ -123,12 +123,11 @@ export default function Departments({ onTabChange }: { onTabChange?: (tab: strin
     return () => clearTimeout(debounce);
   }, [search, statusFilter]);
 
-  React.useEffect(() => { fetchPositions(); }, []);
-
   // When a department card is clicked — load its members
   const handleViewDept = async (dept: any) => {
     setSelectedDept(dept);
     setDeptLoading(true);
+    fetchPositions(dept.id);
     try {
       const { data, error } = await supabase
         .from('church_workers')

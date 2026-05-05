@@ -191,8 +191,28 @@ export default function LiveStreamManager() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.title || !form.scheduled_start) { toast.error("Title and start time are required."); return; }
+
+    let finalSpeakerId = form.speaker_id;
+    if (finalSpeakerId) {
+      const selectedSpeaker = speakers.find(s => s.id === finalSpeakerId);
+      if (selectedSpeaker) {
+        const { data: existing } = await supabase.from('sermon_speakers').select('id').eq('id', finalSpeakerId).maybeSingle();
+        if (!existing) {
+          const { data: existingByName } = await supabase.from('sermon_speakers').select('id').ilike('name', selectedSpeaker.name).maybeSingle();
+          if (existingByName) {
+            finalSpeakerId = existingByName.id;
+          } else {
+            const { data: newSpeaker, error: spkErr } = await supabase.from('sermon_speakers').insert([{ name: selectedSpeaker.name }]).select('id').single();
+            if (spkErr) { toast.error(spkErr.message); return; }
+            finalSpeakerId = newSpeaker.id;
+          }
+        }
+      }
+    }
+
     const payload = { 
       ...form, 
+      speaker_id: finalSpeakerId,
       user_id: user?.id,
       scheduled_start: new Date(form.scheduled_start).toISOString(), 
       scheduled_end: form.scheduled_end ? new Date(form.scheduled_end).toISOString() : null,
