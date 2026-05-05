@@ -165,7 +165,7 @@ export default function MemberAssignmentDialog({ member, open, onOpenChange, onS
       const deptName = departments.find(d => d.id === selectedDept)?.name || null;
       const minName = ministries.find(m => m.id === selectedMinistry)?.name || null;
       const { error: profileErr } = await supabase.from('profiles').update({ 
-        title: selectedTitle as any,
+        title: (selectedTitle || null) as any,
         ministry: minName as any,
         department: deptName as any
       } as any).eq('id', member.id);
