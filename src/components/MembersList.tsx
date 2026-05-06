@@ -102,7 +102,7 @@ export default function MembersList({ onTabChange }: { onTabChange?: (tab: strin
   const fetchPendingApprovals = async () => {
     const { data } = await supabase
       .from('profiles')
-      .select('id, first_name, last_name, email, avatar_url, title, role_claim, department_claim, already_serving, created_at')
+      .select('id, first_name, last_name, email, avatar_url, title, role_claim, department_claim, position_interest, already_serving, created_at')
       .eq('approval_status', 'pending')
       .order('created_at', { ascending: true });
     setPendingApprovals(data || []);
@@ -119,18 +119,26 @@ export default function MembersList({ onTabChange }: { onTabChange?: (tab: strin
         approved_at: new Date().toISOString(),
       };
 
-      // Handle Department Claim
+      // Handle Department & Position Claim
       if (profile.department_claim) {
         const { data: departments } = await supabase.from('church_departments').select('id, name');
+        const { data: positions } = await supabase.from('church_positions').select('id, title');
+        
         const matchedDept = (departments || []).find(d => 
           d.name.toLowerCase().includes(profile.department_claim.toLowerCase()) ||
           profile.department_claim.toLowerCase().includes(d.name.toLowerCase())
         );
         
         if (matchedDept) {
+          const matchedPos = (positions || []).find(p => 
+            p.title.toLowerCase().includes(profile.position_interest?.toLowerCase()) ||
+            profile.position_interest?.toLowerCase().includes(p.title.toLowerCase())
+          );
+
           await (supabase.from('church_workers') as any).upsert({
             user_id: profile.id,
             department_id: matchedDept.id,
+            position_id: matchedPos?.id || null,
             status: 'active'
           }, { onConflict: 'user_id' });
           
