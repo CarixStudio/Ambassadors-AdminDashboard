@@ -156,6 +156,20 @@ export default function Ministries({ type = "ministry", onTabChange }: Ministrie
         .eq('id', memberId);
       if (error) throw error;
 
+      // Sync to profile role_claim if it's a department position or ministry role
+      const memberRecord = ministryMembers.find(m => m.id === memberId);
+      if (memberRecord && memberRecord.user_id) {
+        let displayRole = newRoleOrPositionId;
+        
+        // If it's a position ID, find the title
+        if (isDepartment) {
+          const pos = positions.find((p: any) => p.id === newRoleOrPositionId);
+          if (pos) displayRole = pos.title;
+        }
+
+        await supabase.from('profiles').update({ role_claim: displayRole }).eq('id', memberRecord.user_id);
+      }
+
       await auditRepo.logAction({
         admin_id: user?.id || 'unknown',
         action: 'UPDATE',
