@@ -160,7 +160,10 @@ export default function ApprovalsCenter() {
         ministries: ministries || [],
         testimonies: testimonies || [],
         prayers: prayers || [],
-        outreach: outreach || []
+        outreach: (outreach || []).map((o: any) => {
+          const matchedPos = pData?.find((p: any) => p.title === o.position_interest);
+          return { ...o, _selectedPosition: matchedPos?.id || '' };
+        })
       });
       setRoles(rData || []);
       setDepartments(dData || []);

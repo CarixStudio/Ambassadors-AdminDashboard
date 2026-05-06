@@ -38,7 +38,8 @@ import {
   Inbox,
   PenLine,
   Sun,
-  Mail
+  Mail,
+  Layers
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -149,6 +150,7 @@ export default function Layout({ children, onTabChange, activeTab }: { children:
   const menuItems = [
     { id: "dashboard", icon: LayoutDashboard, label: "Dashboard", category: "Main" },
     { id: "approvals", icon: ClipboardCheck, label: "Approvals Center", category: "Main" },
+    { id: "structure", icon: Layers, label: "Structure", category: "Main" },
     { id: "members", icon: Users, label: "Members", category: "Community" },
     { id: "ministries", icon: ShieldCheck, label: "Ministries", category: "Community" },
     { id: "departments", icon: Building2, label: "Community Outreach", category: "Community" },
@@ -181,7 +183,7 @@ export default function Layout({ children, onTabChange, activeTab }: { children:
   ];
 
   const filteredMenuItems = menuItems.filter(item => {
-    if (["donations", "giving-goals", "reports", "admin-settings", "admin-roles", "admin-system", "admin-audit", "broadcast"].includes(item.id)) {
+    if (["donations", "giving-goals", "reports", "admin-settings", "admin-roles", "admin-system", "admin-audit", "broadcast", "structure"].includes(item.id)) {
       return role === 'admin' || role === 'super_admin' || role === 'pastor';
     }
     if (item.id === "approvals") {
@@ -552,4 +554,3 @@ export default function Layout({ children, onTabChange, activeTab }: { children:
     </div>
   );
 }
-

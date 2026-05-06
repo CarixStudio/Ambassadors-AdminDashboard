@@ -34,6 +34,7 @@ import BlogPosts from "./components/BlogPosts";
 import DevoManager from "./components/DevoManager";
 import NewsletterManager from "./components/NewsletterManager";
 import ApprovalsCenter from "./components/ApprovalsCenter";
+import StructureManagement from "./components/StructureManagement";
 import Broadcast from "./components/Broadcast";
 import Notifications from "./components/Notifications";
 import { Toaster } from "sonner";
@@ -281,6 +282,8 @@ function AppContent() {
         return <Broadcast />;
       case "approvals":
         return <ApprovalsCenter />;
+      case "structure":
+        return <StructureManagement onTabChange={handleTabChange} />;
       case "notifications":
         return <Notifications />;
       default:
@@ -290,7 +293,7 @@ function AppContent() {
 
   return (
     <TooltipProvider>
-      <Layout onTabChange={setActiveTab} activeTab={activeTab}>
+      <Layout onTabChange={handleTabChange} activeTab={activeTab}>
         {renderContent()}
       </Layout>
       <Toaster 
