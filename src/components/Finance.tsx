@@ -80,13 +80,15 @@ export default function Finance() {
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [syncing, setSyncing] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState("transactions");
+  const [filterCategory, setFilterCategory] = React.useState("All");
+  const [filterStatus, setFilterStatus] = React.useState("All");
 
   const isSuperAdmin = role === 'super_admin';
 
   const fetchGivingData = async (retries = 3) => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('donations')
         .select(`
           *,
@@ -98,13 +100,28 @@ export default function Finance() {
         `)
         .order('created_at', { ascending: false });
 
+      if (filterCategory !== 'All') {
+        query = query.eq('donation_type', filterCategory);
+      }
+      if (filterStatus !== 'All') {
+        query = query.eq('status', filterStatus);
+      }
+
+      const { data, error } = await query;
+
       if (error) throw error;
 
-      const total = data?.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0) || 0;
+      const total = data?.reduce((acc, curr) => {
+        if (curr.status === 'completed') {
+          return acc + (Number(curr.amount) || 0);
+        }
+        return acc;
+      }, 0) || 0;
       
       // Calculate aggregated donors
       const donorMap: Record<string, any> = {};
       data?.forEach(d => {
+        if (d.status !== 'completed') return;
         const id = d.user_id || d.donor_email || 'anonymous';
         if (!donorMap[id]) {
           donorMap[id] = {
@@ -129,7 +146,7 @@ export default function Finance() {
         ...prev, 
         total, 
         donors: uniqueDonorsList.length, 
-        avg: data?.length ? total / data.length : 0 
+        avg: data?.length ? total / data.filter(d => d.status === 'completed').length : 0 
       }));
     } catch (error: any) {
       console.error("Error fetching giving data:", error);
@@ -143,7 +160,7 @@ export default function Finance() {
     if (!authLoading) {
       fetchGivingData();
     }
-  }, [authLoading]);
+  }, [authLoading, filterCategory, filterStatus]);
 
   const handleSyncPaystack = async () => {
     setSyncing(true);
@@ -323,7 +340,30 @@ export default function Finance() {
                 <CardTitle className="text-xl font-bold">Recent Contributions</CardTitle>
                 <CardDescription className="text-[10px] font-black uppercase tracking-widest">Last 50 payments processed</CardDescription>
               </div>
-              <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => fetchGivingData()}><RefreshCw className="w-4 h-4" /></Button>
+              <div className="flex items-center gap-3">
+                <select 
+                  className="bg-muted/20 border border-border/50 text-[10px] font-bold uppercase tracking-widest rounded-xl px-4 py-2 outline-none"
+                  value={filterCategory}
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                >
+                  <option value="All">All Categories</option>
+                  <option value="General Giving">General Giving</option>
+                  <option value="Tithe">Tithe</option>
+                  <option value="building_fund">Building Fund</option>
+                  <option value="Project Seed">Project Seed</option>
+                </select>
+                <select 
+                  className="bg-muted/20 border border-border/50 text-[10px] font-bold uppercase tracking-widest rounded-xl px-4 py-2 outline-none"
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                >
+                  <option value="All">All Statuses</option>
+                  <option value="completed">Completed</option>
+                  <option value="pending">Pending</option>
+                  <option value="failed">Failed</option>
+                </select>
+                <Button variant="ghost" size="icon" className="rounded-xl bg-muted/20 hover:bg-muted/40" onClick={() => fetchGivingData()}><RefreshCw className="w-4 h-4" /></Button>
+              </div>
             </CardHeader>
             <CardContent className="p-8">
               <div className="space-y-4">
@@ -345,9 +385,11 @@ export default function Finance() {
                         <div className="flex items-center gap-2">
                           <p className="font-bold text-sm">{d.donor_name || 'Ambassador Member'}</p>
                           <Badge variant="outline" className="text-[7px] font-black uppercase border-primary/20 text-primary">{d.donation_type || d.category}</Badge>
+                          {d.status === 'pending' && <Badge variant="secondary" className="text-[7px] font-black uppercase bg-amber-500/10 text-amber-500">Pending</Badge>}
+                          {d.status === 'failed' && <Badge variant="secondary" className="text-[7px] font-black uppercase bg-destructive/10 text-destructive">Failed</Badge>}
                         </div>
                         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">
-                          {d.paystack_reference ? `Paystack: ${d.paystack_reference}` : 'Offline Entry'}
+                          {d.paystack_reference || d.reference ? `Ref: ${d.paystack_reference || d.reference}` : 'Offline Entry'}
                         </p>
                       </div>
                     </div>
