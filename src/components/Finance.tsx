@@ -164,12 +164,36 @@ export default function Finance() {
 
   const handleSyncPaystack = async () => {
     setSyncing(true);
+    
+    const syncPromise = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      
+      const baseUrl = import.meta.env.VITE_MAIN_APP_URL || 'http://localhost:3000';
+      const response = await fetch(`${baseUrl}/api/payments/admin/sync-paystack`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: JSON.stringify({
+          page: 1
+        })
+      });
+      
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Paystack sync failed.');
+      }
+      return result;
+    };
+
     toast.promise(
-      new Promise((resolve) => setTimeout(resolve, 2500)),
+      syncPromise(),
       {
         loading: 'Syncing with Paystack API...',
-        success: 'Financial records updated!',
-        error: 'Paystack sync failed.',
+        success: (res: any) => res.message || 'Financial records updated!',
+        error: (err: any) => err.message || 'Paystack sync failed.',
         finally: () => {
           setSyncing(false);
           fetchGivingData();
