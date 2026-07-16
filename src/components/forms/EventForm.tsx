@@ -57,7 +57,7 @@ export default function EventForm({ initialData, onSuccess, onCancel }: EventFor
       status: initialData.status || "upcoming",
       start_date: initialData.start_date ? new Date(initialData.start_date).toISOString().slice(0, 16) : "",
       end_date: initialData.end_date ? new Date(initialData.end_date).toISOString().slice(0, 16) : "",
-      capacity: initialData.capacity || 0,
+      capacity: initialData.max_attendees || 0,
     } : {
       title: "",
       description: "",
@@ -73,8 +73,10 @@ export default function EventForm({ initialData, onSuccess, onCancel }: EventFor
   async function onSubmit(values: EventFormValues) {
     setLoading(true);
     try {
+      const { capacity, ...rest } = values;
       const payload = {
-        ...values,
+        ...rest,
+        max_attendees: capacity,
         event_type: values.event_type as any,
         status: values.status as any,
         slug: values.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')
