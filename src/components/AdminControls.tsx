@@ -246,7 +246,7 @@ export default function AdminControls({ defaultTab = "general", onTabChange }: {
         query = query.filter('first_name', 'ilike', `%${parts[0]}%`).filter('last_name', 'ilike', `%${parts[1]}%`);
       } else {
         // Single term search: check all fields
-        query = query.or(`first_name.ilike.%${userSearch}%,last_name.ilike.%${userSearch}%,email.ilike.%${userSearch}%,role_claim.ilike.%${userSearch}%`);
+        query = query.or(`first_name.ilike.%${userSearch}%,last_name.ilike.%${userSearch}%,email.ilike.%${userSearch}%`);
       }
       
       const { data } = await query.limit(10);
