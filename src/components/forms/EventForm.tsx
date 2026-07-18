@@ -31,14 +31,14 @@ const eventSchema = z.object({
   description: z.string().min(10, "Description is required"),
   location_name: z.string().min(2, "Location is required"),
   start_date: z.string().min(1, "Start date is required"),
-  end_date: z.string().optional(),
-  event_type: z.enum(["service", "conference", "retreat", "workshop", "outreach", "fellowship", "youth", "prayer_meeting", "other", "community_impact"]),
+  end_date: z.string().min(1, "End date is required"),
+  event_type: z.enum(["service", "conference", "retreat", "workshop", "outreach", "fellowship", "youth", "prayer_meeting", "other", "community_impact", "webinar", "seminar"]),
   status: z.enum(["upcoming", "ongoing", "completed", "cancelled", "postponed"]),
   cover_image_url: z.string().optional(),
   capacity: z.number().min(0).default(0),
 });
 
-type EventFormValues = z.infer<typeof eventSchema>;
+type EventFormValues = z.input<typeof eventSchema>;
 
 interface EventFormProps {
   initialData?: any;
@@ -76,7 +76,7 @@ export default function EventForm({ initialData, onSuccess, onCancel }: EventFor
       const { capacity, ...rest } = values;
       const payload = {
         ...rest,
-        max_attendees: capacity,
+        max_attendees: capacity ?? 0,
         event_type: values.event_type as any,
         status: values.status as any,
         slug: values.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')
@@ -158,7 +158,7 @@ export default function EventForm({ initialData, onSuccess, onCancel }: EventFor
             name="end_date"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>End Date & Time</FormLabel>
+                <FormLabel>End Date & Time *</FormLabel>
                 <FormControl>
                   <Input type="datetime-local" {...field} value={(field.value as string) || ""} />
                 </FormControl>
@@ -200,6 +200,8 @@ export default function EventForm({ initialData, onSuccess, onCancel }: EventFor
                     <SelectItem value="conference">Conference</SelectItem>
                     <SelectItem value="retreat">Retreat</SelectItem>
                     <SelectItem value="workshop">Workshop</SelectItem>
+                    <SelectItem value="webinar">Webinar</SelectItem>
+                    <SelectItem value="seminar">Seminar</SelectItem>
                     <SelectItem value="outreach">Outreach</SelectItem>
                     <SelectItem value="community_impact">Community Impact</SelectItem>
                     <SelectItem value="fellowship">Fellowship</SelectItem>
